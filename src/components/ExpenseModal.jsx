@@ -8,7 +8,7 @@ const defaultForm = { title: '', amount: '', category: 'food', date: today, note
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
+export default function ExpenseModal({ isOpen, onClose, onSave, expense, autoScan }) {
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
@@ -32,7 +32,15 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
     }
     setScanStatus(null);
     setPreviewUrl(null);
-  }, [expense, isOpen]);
+    setScanError('');
+
+    // If autoScan is true and we're not editing, trigger file input
+    if (isOpen && autoScan && !expense && fileInputRef.current) {
+      setTimeout(() => {
+        fileInputRef.current.click();
+      }, 100);
+    }
+  }, [expense, isOpen, autoScan]);
 
   if (!isOpen) return null;
 
@@ -116,7 +124,6 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               style={{ display: 'none' }}
               onChange={handleReceiptUpload}
               id="receipt-upload"

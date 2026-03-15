@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, LogOut, ChevronDown, Bell, ChevronRight } from 'lucide-react';
+import { Plus, LogOut, ChevronDown, Bell, ChevronRight, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useRef } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth } from './firebase';
 import { useExpenses } from './hooks/useExpenses';
@@ -11,6 +12,8 @@ import LoginPage from './components/LoginPage';
 import ReportPage from './components/ReportPage';
 import BottomNav from './components/BottomNav';
 import { getGreeting, getDailyQuote, formatCurrency } from './utils/constants.jsx';
+import EntryMethodPicker from './components/EntryMethodPicker';
+import { parseReceiptWithGemini } from './utils/geminiOcr';
 import './App.css';
 
 const FULL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -40,7 +43,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('home');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [isMagicScanning, setIsMagicScanning] = useState(false);
+  const [showMagicSuccess, setShowMagicSuccess] = useState(false);
+  const [magicError, setMagicError] = useState(null);
   const [filter, setFilter] = useState({ search: '', category: '', type: '' });
+  
+  const magicFileInputRef = useRef(null);
 
   const { expenses, loading, addExpense, deleteExpense, updateExpense } = useExpenses(user);
 
@@ -65,6 +74,36 @@ export default function App() {
   }, [expenses, filter]);
 
   const grouped = useMemo(() => groupByDate(filtered), [filtered]);
+
+  const handleMagicScan = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsMagicScanning(true);
+    setMagicError(null);
+
+    try {
+      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+      const parsed = await parseReceiptWithGemini(file, apiKey);
+      
+      // Auto save
+      await addExpense({
+        ...parsed,
+        type: 'expense'
+      });
+
+      setIsMagicScanning(false);
+      setShowMagicSuccess(true);
+      setTimeout(() => setShowMagicSuccess(false), 3000);
+    } catch (err) {
+      console.error('Magic scan failed:', err);
+      setMagicError(err.message || 'Gagal membaca struk');
+      setIsMagicScanning(false);
+      // Fallback: open manual modal if AI fails?
+    } finally {
+      if (magicFileInputRef.current) magicFileInputRef.current.value = '';
+    }
+  };
 
   const now = new Date();
   const monthLabel = `${FULL_MONTHS[now.getMonth()]} ${now.getFullYear()}`;
@@ -195,9 +234,73 @@ export default function App() {
       <BottomNav
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onFab={() => { setEditingExpense(null); setModalOpen(true); }}
+        onFab={() => { setEditingExpense(null); setPickerOpen(true); }}
         showFab={activeTab === 'home'}
       />
+
+      <EntryMethodPicker
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onSelect={(method) => {
+          setPickerOpen(false);
+          if (method === 'scan') {
+            magicFileInputRef.current?.click();
+          } else {
+            setModalOpen(true);
+          }
+        }}
+      />
+
+      <input
+        type="file"
+        ref={magicFileInputRef}
+        style={{ display: 'none' }}
+        accept="image/*"
+        onChange={handleMagicScan}
+      />
+
+      {/* Magic Scanning Overlay */}
+      {isMagicScanning && (
+        <div className="magic-overlay">
+          <div className="magic-card">
+            <div className="magic-spinner" />
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Magic Scanning...</h3>
+              <p style={{ margin: '5px 0 0', fontSize: '0.85rem', color: 'var(--ink-3)' }}>
+                AI sedang membaca & mencatat struk kamu
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Magic Success Toast */}
+      {showMagicSuccess && (
+        <div className="magic-success">
+          <CheckCircle2 size={20} />
+          <span>Expense Saved Automatically!</span>
+        </div>
+      )}
+
+      {/* Magic Error Fallback */}
+      {magicError && (
+        <div className="magic-overlay" onClick={() => setMagicError(null)}>
+          <div className="magic-card" style={{ borderColor: '#FEE2E2' }}>
+            <AlertCircle size={40} color="#EF4444" />
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ margin: 0, color: '#EF4444' }}>Gagal Membaca</h3>
+              <p style={{ margin: '5px 0 0', fontSize: '0.85rem' }}>{magicError}</p>
+            </div>
+            <button 
+              className="btn-save" 
+              style={{ padding: '10px 20px', fontSize: '0.85rem' }}
+              onClick={() => { setMagicError(null); setModalOpen(true); }}
+            >
+              Masukan Manual Saja
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── MODAL ── */}
       <ExpenseModal
