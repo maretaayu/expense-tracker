@@ -499,6 +499,19 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 .cat-option-label  { font-size: 0.64rem; font-weight: 700; color: var(--ink-3); text-align: center; line-height: 1.2; }
 .cat-option.selected .cat-option-label { color: var(--ink-2); }
 
+/* Section Headers */
+.section-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 24px 0 16px; padding: 0 4px;
+}
+.section-title { font-size: 1.1rem; font-weight: 800; color: var(--ink); margin: 0; }
+.section-link {
+  font-size: 0.85rem; font-weight: 700; color: var(--violet);
+  background: transparent; border: none; cursor: pointer;
+  padding: 4px 8px; border-radius: 8px; transition: background 0.2s;
+}
+.section-link:hover { background: rgba(141,97,255,0.08); }
+
 /* Actions */
 .modal-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 8px; }
 .btn-cancel {

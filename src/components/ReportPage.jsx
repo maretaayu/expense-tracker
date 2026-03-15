@@ -8,14 +8,30 @@ export default function ReportPage({ expenses }) {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [reportType, setReportType] = useState('expense'); // 'expense' or 'income'
+  const [range, setRange] = useState('monthly'); // 'daily', 'weekly', 'monthly'
 
   const filtered = useMemo(() => {
     return expenses.filter((e) => {
-      const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.date || Date.now());
-      return d.getFullYear() === year && d.getMonth() === month && 
-             (reportType === 'expense' ? e.type !== 'income' : e.type === 'income');
+      const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+      const isMatch = reportType === 'expense' ? e.type !== 'income' : e.type === 'income';
+      if (!isMatch) return false;
+
+      const dateStr = d.toISOString().split('T')[0];
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
+      if (range === 'daily') {
+        return dateStr === todayStr;
+      }
+      if (range === 'weekly') {
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay());
+        startOfWeek.setHours(0,0,0,0);
+        return d >= startOfWeek && d <= today;
+      }
+      return d.getFullYear() === year && d.getMonth() === month;
     });
-  }, [expenses, year, month, reportType]);
+  }, [expenses, year, month, reportType, range]);
 
   const total = filtered.reduce((acc, curr) => acc + Number(curr.amount), 0);
   const categoriesDefinition = reportType === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
@@ -53,46 +69,128 @@ export default function ReportPage({ expenses }) {
   const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(year, month, 1));
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
 
-  // Chart Data: Group by Month for the selected Year
-  const yearlyChartData = useMemo(() => {
-    const map = {};
-    for (let i = 0; i < 12; i++) {
-        map[i] = 0;
+  // Comparison logic
+  const { prevTotal, diffPct } = useMemo(() => {
+    const today = new Date();
+    const isMatch = (e) => reportType === 'expense' ? e.type !== 'income' : e.type === 'income';
+    
+    let prevFiltered = [];
+    if (range === 'daily') {
+      const yesterday = new Date(today);
+      yesterday.setDate(today.getDate() - 1);
+      const yestStr = yesterday.toISOString().split('T')[0];
+      prevFiltered = expenses.filter(e => {
+        const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        return d.toISOString().split('T')[0] === yestStr && isMatch(e);
+      });
+    } else if (range === 'weekly') {
+      const startOfPrevWeek = new Date(today);
+      startOfPrevWeek.setDate(today.getDate() - today.getDay() - 7);
+      const endOfPrevWeek = new Date(startOfPrevWeek);
+      endOfPrevWeek.setDate(startOfPrevWeek.getDate() + 6);
+      prevFiltered = expenses.filter(e => {
+        const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        return d >= startOfPrevWeek && d <= endOfPrevWeek && isMatch(e);
+      });
+    } else {
+      let prevMonth = month - 1;
+      let prevYear = year;
+      if (prevMonth < 0) { prevMonth = 11; prevYear--; }
+      prevFiltered = expenses.filter(e => {
+        const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        return d.getFullYear() === prevYear && d.getMonth() === prevMonth && isMatch(e);
+      });
+    }
+
+    const pTotal = prevFiltered.reduce((s, e) => s + Number(e.amount), 0);
+    const diff = total - pTotal;
+    const dPct = pTotal > 0 ? Math.round((diff / pTotal) * 100) : (total > 0 ? 100 : 0);
+    return { prevTotal: pTotal, diffPct: dPct };
+  }, [expenses, range, reportType, total, month, year]);
+
+  const chartData = useMemo(() => {
+    if (range === 'monthly') {
+      const map = {};
+      for (let i = 0; i < 12; i++) map[i] = 0;
+      expenses.forEach((e) => {
+        const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        if (d.getFullYear() === year && (reportType === 'expense' ? e.type !== 'income' : e.type === 'income')) {
+          map[d.getMonth()] += Number(e.amount);
+        }
+      });
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return Object.keys(map).map(m => ({ monthIndex: Number(m), month: monthNames[m], value: map[m] }));
     }
     
-    expenses.forEach((e) => {
-      const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.date || Date.now());
-      if (d.getFullYear() === year && (reportType === 'expense' ? e.type !== 'income' : e.type === 'income')) {
-          map[d.getMonth()] += Number(e.amount);
+    if (range === 'weekly') {
+      const weeks = { 'W1': 0, 'W2': 0, 'W3': 0, 'W4': 0, 'W5': 0 };
+      
+      expenses.forEach(e => {
+        const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        const isMatch = reportType === 'expense' ? e.type !== 'income' : e.type === 'income';
+        
+        if (d.getFullYear() === year && d.getMonth() === month && isMatch) {
+          const dayOfMonth = d.getDate();
+          let weekKey;
+          if (dayOfMonth <= 7) weekKey = 'W1';
+          else if (dayOfMonth <= 14) weekKey = 'W2';
+          else if (dayOfMonth <= 21) weekKey = 'W3';
+          else if (dayOfMonth <= 28) weekKey = 'W4';
+          else weekKey = 'W5';
+          
+          weeks[weekKey] += Number(e.amount);
+        }
+      });
+      
+      return Object.keys(weeks).map(key => ({ month: key, value: weeks[key] }));
+    }
+    
+    // Default / Daily: Show last 7 days specifically
+    const last7Days = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      last7Days.push({
+        date: d.toISOString().split('T')[0],
+        label: d.getDate().toString(),
+        value: 0
+      });
+    }
+
+    expenses.forEach(e => {
+      const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+      const isMatch = reportType === 'expense' ? e.type !== 'income' : e.type === 'income';
+      if (isMatch) {
+        const dateStr = d.toISOString().split('T')[0];
+        const found = last7Days.find(day => day.date === dateStr);
+        if (found) found.value += Number(e.amount);
       }
     });
 
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return Object.keys(map).map(m => ({
-        monthIndex: Number(m),
-        month: monthNames[m],
-        value: map[m]
-    }));
-  }, [expenses, year, reportType]);
+    return last7Days.map(d => ({ month: d.label, value: d.value, fullDate: d.date }));
+  }, [expenses, filtered, range, reportType, year, total, prevTotal]);
 
   // Calculate insights
   const highestCategory = breakdown.length > 0 ? breakdown[0] : null;
 
   return (
     <div className="report-page" style={{ paddingBottom: '100px' }}>
-      {/* Month Selector */}
-      <div className="month-selector" style={{ padding: '0 4px', boxShadow:'none', background:'none', marginBottom: 16 }}>
-        <button className="month-nav-btn" onClick={() => changeMonth(-1)}>
-          <ChevronLeft size={18} />
-        </button>
-        <div className="month-label">
-          <p className="month-name">{monthName} <span style={{fontWeight:500, color:'var(--ink-3)'}}>{year}</span></p>
+
+      {/* Month Selector (only for monthly) */}
+      {range === 'monthly' && (
+        <div className="month-selector" style={{ padding: '0 4px', boxShadow:'none', background:'none', marginBottom: 16 }}>
+          <button className="month-nav-btn" onClick={() => changeMonth(-1)}>
+            <ChevronLeft size={18} />
+          </button>
+          <div className="month-label">
+            <p className="month-name">{monthName} <span style={{fontWeight:500, color:'var(--ink-3)'}}>{year}</span></p>
+          </div>
+          <button className="month-nav-btn" onClick={() => changeMonth(1)} disabled={isCurrentMonth} style={{ opacity: isCurrentMonth ? 0.3 : 1 }}>
+            <ChevronRight size={18} />
+          </button>
         </div>
-        <button className="month-nav-btn" onClick={() => changeMonth(1)} disabled={isCurrentMonth} style={{ opacity: isCurrentMonth ? 0.3 : 1 }}>
-          <ChevronRight size={18} />
-        </button>
-      </div>
+      )}
 
       {/* Type Toggle */}
       <div className="report-type-tabs" style={{ marginBottom: 24 }}>
@@ -110,12 +208,35 @@ export default function ReportPage({ expenses }) {
         </button>
       </div>
 
-      {/* Monthly Chart */}
+      {/* Chart */}
       <div style={{ background: 'var(--card)', borderRadius: 'var(--r-2xl)', padding: '24px 16px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid var(--border)' }}>
-        <p style={{fontSize:'1.1rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em', marginBottom: '24px', paddingLeft: '8px'}}>Monthly Comparison</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', padding: '0 8px' }}>
+          <p style={{fontSize:'1.1rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em', margin:0}}>
+            {range === 'monthly' ? 'Monthly Comparison' : range === 'weekly' ? 'Daily Spending' : 'Spending Analysis'}
+          </p>
+          
+          <div style={{ display: 'flex', gap: '4px', background: 'var(--bg)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            {['daily', 'weekly', 'monthly'].map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                style={{
+                  padding: '6px 12px', borderRadius: '8px', border: 'none',
+                  background: range === r ? 'white' : 'transparent',
+                  color: range === r ? 'var(--violet)' : 'var(--ink-3)',
+                  fontSize: '0.7rem', fontWeight: 800, textTransform: 'capitalize',
+                  cursor: 'pointer', transition: 'all 0.2s',
+                  boxShadow: range === r ? '0 2px 8px rgba(0,0,0,0.05)' : 'none'
+                }}
+              >
+                {r === 'monthly' ? 'M' : r === 'weekly' ? 'W' : 'D'}
+              </button>
+            ))}
+          </div>
+        </div>
         <div style={{ width: '100%', height: 180 }}>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={yearlyChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <BarChart data={chartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: 'var(--ink-3)', fontWeight: 600 }} dy={10} />
               <Tooltip 
                 cursor={{ fill: 'var(--muted)', opacity: 0.5, radius: 8 }}
@@ -126,13 +247,35 @@ export default function ReportPage({ expenses }) {
               />
               <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={20}>
                 {
-                  yearlyChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={
-                        index === month 
-                        ? (reportType === 'expense' ? '#334155' : '#16A34A') 
-                        : (reportType === 'expense' ? '#F1F5F9' : '#DCFCE7')
-                    } />
-                  ))
+                  chartData.map((entry, index) => {
+                    let isHighlighted = false;
+                    const today = new Date();
+                    
+                    if (range === 'monthly') {
+                      isHighlighted = index === month;
+                    } else if (range === 'weekly') {
+                      const today = new Date();
+                      const dayOfMonth = today.getDate();
+                      let currentWeek;
+                      if (dayOfMonth <= 7) currentWeek = 0;
+                      else if (dayOfMonth <= 14) currentWeek = 1;
+                      else if (dayOfMonth <= 21) currentWeek = 2;
+                      else if (dayOfMonth <= 28) currentWeek = 3;
+                      else currentWeek = 4;
+                      isHighlighted = index === currentWeek && isCurrentMonth;
+                    } else {
+                      // Daily: check if fullDate is today
+                      isHighlighted = entry.fullDate === today.toISOString().split('T')[0];
+                    }
+
+                    return (
+                      <Cell key={`cell-${index}`} fill={
+                        isHighlighted 
+                          ? (reportType === 'expense' ? '#334155' : '#16A34A') 
+                          : (reportType === 'expense' ? '#F1F5F9' : '#DCFCE7')
+                      } />
+                    );
+                  })
                 }
               </Bar>
             </BarChart>
@@ -160,16 +303,31 @@ export default function ReportPage({ expenses }) {
         }} />
 
         <p style={{ fontSize: '0.85rem', fontWeight: 600, color: reportType === 'expense' ? '#334155' : '#16A34A', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Total {reportType === 'expense' ? 'Expenses' : 'Income'}
+          Total {range} {reportType === 'expense' ? 'Expenses' : 'Income'}
         </p>
         <p style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
           {formatCurrency(total)}
         </p>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px' }}>
+          <span style={{ 
+            fontSize: '0.85rem', fontWeight: 700, 
+            color: diffPct > 0 ? '#EF4444' : '#16A34A',
+            background: diffPct > 0 ? '#FEF2F2' : '#F0FDF4',
+            padding: '2px 10px', borderRadius: '20px',
+            display: 'inline-flex', alignItems: 'center', gap: '4px'
+          }}>
+            {diffPct > 0 ? '↗' : '↘'} {Math.abs(diffPct)}%
+          </span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--ink-3)' }}>
+            vs last {range === 'daily' ? 'day' : range === 'weekly' ? 'week' : 'month'}
+          </span>
+        </div>
+
         {highestCategory && total > 0 && (
           <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px', background: 'rgba(255,255,255,0.7)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)' }}>
             <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink-2)', lineHeight: 1.4 }}>
-              Most of your {reportType === 'expense' ? 'expenses' : 'income'} this month is in the <strong style={{color:'var(--ink)'}}>{highestCategory.label}</strong> category ({highestCategory.pct}%).
+              Most of your {reportType === 'expense' ? 'expenses' : 'income'} this {range === 'daily' ? 'day' : range === 'weekly' ? 'week' : 'month'} is in the <strong style={{color:'var(--ink)'}}>{highestCategory.label}</strong> category ({highestCategory.pct}%).
             </p>
           </div>
         )}

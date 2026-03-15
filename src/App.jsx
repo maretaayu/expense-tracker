@@ -22,18 +22,36 @@ function groupByDate(expenses) {
   const today = new Date(); today.setHours(0,0,0,0);
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
   const groups = {};
+
   expenses.forEach((e) => {
-    const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.date || Date.now());
+    // Priority: e.date (transaction date) then fallbacks
+    // e.date is usually 'YYYY-MM-DD' from the modal
+    const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
     const day = new Date(d); day.setHours(0,0,0,0);
+    
     let label;
-    if (day.getTime() === today.getTime()) label = 'Today';
-    else if (day.getTime() === yesterday.getTime()) label = 'Yesterday';
-    else label = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
-    const key = `${day.getTime()}__${label}`;
-    if (!groups[key]) groups[key] = { label, items: [], ts: day.getTime(), total: 0 };
+    if (day.getTime() === today.getTime()) {
+      label = 'Today';
+    } else if (day.getTime() === yesterday.getTime()) {
+      label = 'Yesterday';
+    } else {
+      label = new Intl.DateTimeFormat('en-US', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+      }).format(d);
+    }
+
+    const key = day.getTime(); // Use timestamp as key for better sorting
+    if (!groups[key]) {
+      groups[key] = { label, items: [], ts: day.getTime(), total: 0 };
+    }
     groups[key].items.push(e);
     if (e.type !== 'income') groups[key].total += Number(e.amount);
   });
+
+  // Sort groups by timestamp descending
   return Object.values(groups).sort((a, b) => b.ts - a.ts);
 }
 
@@ -187,7 +205,9 @@ export default function App() {
 
             {/* Transaction section */}
 
-            {/* No filter bar on home to match reference exactly */}
+            <div className="section-head">
+              <h3 className="section-title">Recent Transactions</h3>
+            </div>
 
             <div className="expense-list">
               {loading ? (
