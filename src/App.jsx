@@ -110,13 +110,13 @@ export default function App() {
                 : <div className="hero-avatar-placeholder">{initials}</div>
               }
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#fff' }}>{greeting}, {firstName}</span>
-                <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', marginTop: '2px' }}>{motivation}</span>
+                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{greeting}, {firstName}</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--ink-3)', marginTop: '2px' }}>{motivation}</span>
               </div>
             </div>
             
             <button className="hero-notif" onClick={() => signOut(auth)} title="Logout" style={{ border: 'none', background: 'transparent' }}>
-              <LogOut size={20} color="#fff" />
+              <LogOut size={20} color="var(--ink)" />
             </button>
           </div>
 
@@ -147,12 +147,6 @@ export default function App() {
             />
 
             {/* Transaction section */}
-            <div className="tx-section-header">
-              <p className="tx-section-title">Recent Transactions</p>
-              <div className="tx-section-actions">
-                <button className="tx-period-badge" onClick={() => setActiveTab('report')}>View Report</button>
-              </div>
-            </div>
 
             {/* No filter bar on home to match reference exactly */}
 

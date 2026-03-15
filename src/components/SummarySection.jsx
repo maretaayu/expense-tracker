@@ -23,7 +23,7 @@ export default function SummarySection({ totalIncome, totalExpense, onDetail }) 
 
         {/* Expense */}
         <div className="money-col">
-          <div className="money-icon" style={{ background: '#F1F5F9', color: '#475569' }}>
+          <div className="money-icon" style={{ background: '#FEF2F2', color: '#EF4444' }}>
             <Wallet size={18} strokeWidth={2.5} />
           </div>
           <div className="money-col-body">

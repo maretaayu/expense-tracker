@@ -56,37 +56,21 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 }
 
 /* ════════════════════════════════
-   GRADIENT HERO HEADER
+   HERO HEADER (Clean Minimalist)
    ════════════════════════════════ */
 .hero-header {
-  background-color: #6366F1; /* base indigo */
+  background-color: #FAFAFA;
   background-image: 
-    radial-gradient(at 0% 0%, #818CF8 0px, transparent 60%),
-    radial-gradient(at 100% 0%, #A78BFA 0px, transparent 60%),
-    radial-gradient(at 100% 100%, #4F46E5 0px, transparent 60%),
-    radial-gradient(at 0% 100%, #3B82F6 0px, transparent 50%);
+    radial-gradient(ellipse at 15% 90%, rgba(99, 102, 241, 0.2) 0%, transparent 65%),
+    radial-gradient(ellipse at 85% 15%, rgba(236, 72, 153, 0.15) 0%, transparent 65%);
   padding: 52px 22px 72px;
   position: relative;
   overflow: hidden;
+  border-bottom: 1px solid var(--border);
 }
-/* decorative circles */
-.hero-header::before {
-  content: '';
-  position: absolute;
-  width: 380px; height: 380px;
-  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%);
-  border-radius: 50%;
-  top: -160px; right: -120px;
-  pointer-events: none;
-}
+.hero-header::before,
 .hero-header::after {
-  content: '';
-  position: absolute;
-  width: 240px; height: 240px;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
-  border-radius: 50%;
-  bottom: -60px; left: -80px;
-  pointer-events: none;
+  display: none;
 }
 
 .hero-bar {
@@ -105,9 +89,9 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 .hero-avatar-placeholder {
   width: 40px; height: 40px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.4);
-  background: rgba(255,255,255,0.2);
-  color: #fff; font-size: 1rem; font-weight: 800;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink); font-size: 1rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
 }
 .hero-month-btn {
@@ -155,16 +139,16 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 }
 .hero-label {
   font-size: 0.8rem; font-weight: 600;
-  color: rgba(255,255,255,0.85);
+  color: var(--ink-3);
   letter-spacing: 0.04em;
   margin-bottom: 8px;
 }
 .hero-amount {
   font-size: 3rem; font-weight: 800;
-  color: #fff; letter-spacing: -0.04em;
+  color: var(--ink); letter-spacing: -0.04em;
   line-height: 1;
 }
-.hero-amount.neg { color: #fff; }
+.hero-amount.neg { color: var(--ink); }
 
 .hero-metrics {
   margin-top: 12px;
@@ -172,21 +156,20 @@ input, textarea, select, button { font-family: inherit !important; outline: none
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgba(255,255,255,0.15);
+  background: var(--card);
   padding: 6px 14px;
   border-radius: 100px;
   display: inline-flex;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid var(--border);
 }
 
 .hero-sub {
   font-size: 0.75rem; font-weight: 600;
-  color: #fff;
+  color: var(--ink-2);
 }
 
 .hero-sub-divider {
-  color: rgba(255,255,255,0.4);
+  color: var(--border);
   font-size: 0.8rem;
 }
 
@@ -194,7 +177,7 @@ input, textarea, select, button { font-family: inherit !important; outline: none
    CONTENT SHEET (overlaps hero)
    ════════════════════════════════ */
 .content-sheet {
-  background: var(--card); /* Changed to card (white) for a flatter minimalist look */
+  background: var(--card);
   border-radius: 32px 32px 0 0;
   margin-top: -32px;
   flex: 1;

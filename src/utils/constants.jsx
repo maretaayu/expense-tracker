@@ -4,22 +4,22 @@ import {
 } from 'lucide-react';
 
 export const EXPENSE_CATEGORIES = [
-  { label: 'Food',          value: 'food',          icon: Utensils,    color: '#475569', bg: '#F1F5F9' },
-  { label: 'Transport',     value: 'transport',      icon: Car,         color: '#475569', bg: '#F1F5F9' },
-  { label: 'Shopping',      value: 'shopping',       icon: ShoppingBag, color: '#475569', bg: '#F1F5F9' },
-  { label: 'Entertainment', value: 'entertainment',  icon: Gamepad2,    color: '#475569', bg: '#F1F5F9' },
-  { label: 'Health',        value: 'health',         icon: HeartPulse,  color: '#475569', bg: '#F1F5F9' },
-  { label: 'Education',     value: 'education',      icon: BookOpen,    color: '#475569', bg: '#F1F5F9' },
-  { label: 'Bills',         value: 'bills',          icon: Zap,         color: '#475569', bg: '#F1F5F9' },
-  { label: 'Investment',    value: 'investment',     icon: TrendingUp,  color: '#475569', bg: '#F1F5F9' },
-  { label: 'Others',        value: 'other',          icon: Package,     color: '#475569', bg: '#F1F5F9' },
+  { label: 'Food',          value: 'food',          icon: Utensils,    color: '#F97316', bg: '#FFF7ED' },
+  { label: 'Transport',     value: 'transport',      icon: Car,         color: '#0EA5E9', bg: '#F0F9FF' },
+  { label: 'Shopping',      value: 'shopping',       icon: ShoppingBag, color: '#D946EF', bg: '#FDF4FF' },
+  { label: 'Entertainment', value: 'entertainment',  icon: Gamepad2,    color: '#8B5CF6', bg: '#F5F3FF' },
+  { label: 'Health',        value: 'health',         icon: HeartPulse,  color: '#EF4444', bg: '#FEF2F2' },
+  { label: 'Education',     value: 'education',      icon: BookOpen,    color: '#6366F1', bg: '#EEF2FF' },
+  { label: 'Bills',         value: 'bills',          icon: Zap,         color: '#EAB308', bg: '#FEFCE8' },
+  { label: 'Investment',    value: 'investment',     icon: TrendingUp,  color: '#10B981', bg: '#ECFDF5' },
+  { label: 'Others',        value: 'other',          icon: Package,     color: '#64748B', bg: '#F8FAFC' },
 ];
 
 export const INCOME_CATEGORIES = [
-  { label: 'Salary',      value: 'salary',    icon: Briefcase,   color: '#475569', bg: '#F1F5F9' },
-  { label: 'Freelance',   value: 'freelance', icon: DollarSign,  color: '#475569', bg: '#F1F5F9' },
-  { label: 'Bonus',       value: 'bonus',     icon: Gift,        color: '#475569', bg: '#F1F5F9' },
-  { label: 'Investment',  value: 'inv_income',icon: TrendingUp,  color: '#475569', bg: '#F1F5F9' },
+  { label: 'Salary',      value: 'salary',    icon: Briefcase,   color: '#16A34A', bg: '#F0FDF4' },
+  { label: 'Freelance',   value: 'freelance', icon: DollarSign,  color: '#22C55E', bg: '#F0FDF4' },
+  { label: 'Bonus',       value: 'bonus',     icon: Gift,        color: '#F43F5E', bg: '#FFF1F2' },
+  { label: 'Investment',  value: 'inv_income',icon: TrendingUp,  color: '#10B981', bg: '#ECFDF5' },
   { label: 'Others',      value: 'inc_other', icon: Wallet,      color: '#475569', bg: '#F1F5F9' },
 ];
 

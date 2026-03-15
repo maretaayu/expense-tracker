@@ -18,13 +18,13 @@ export default function ExpenseCard({ expense, onEdit, onDelete }) {
         <p className="card-title">{expense.title}</p>
         <div className="card-tags">
           <span className="card-tag">{cat.label}</span>
-          {expense.note && <span className="card-tag">📝 {expense.note.slice(0,16)}</span>}
+          {expense.note && <span className="card-tag">{expense.note.slice(0,16)}</span>}
         </div>
       </div>
 
       {/* Right: amount + date */}
       <div className="card-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-        <p className="card-amount" style={{ color: isIncome ? '#22C55E' : '#EF4444' }}>
+        <p className="card-amount" style={{ color: 'var(--ink)' }}>
           {isIncome ? '+' : '-'}{formatCurrency(expense.amount)}
         </p>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
@@ -32,10 +32,10 @@ export default function ExpenseCard({ expense, onEdit, onDelete }) {
           <button
             className="delete-btn"
             style={{ margin: 0, padding: '4px', display: 'flex' }}
-            title="Hapus transaksi"
+            title="Delete transaction"
             onClick={(e) => {
               e.stopPropagation();
-              if (window.confirm('Hapus transaksi ini?')) onDelete(expense.id);
+              if (window.confirm('Delete this transaction?')) onDelete(expense.id);
             }}
           >
             <Trash2 size={13} />
