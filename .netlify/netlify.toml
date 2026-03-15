@@ -9,7 +9,6 @@ headers = []
 publish = "/Users/fa-12044/Downloads/GitHub/tracker-expense/dist"
 publishOrigin = "ui"
 commandOrigin = "ui"
-base = "/Users/fa-12044/Downloads/GitHub/tracker-expense"
 command = "npm run build"
 
 [build.environment]

@@ -1,13 +1,21 @@
-import { useState, useEffect } from 'react';
-import { ArrowDownLeft, ArrowUpRight, X, Save, DollarSign, Calendar, Type, ToggleLeft, ToggleRight } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowDownLeft, ArrowUpRight, X, Save, DollarSign, Calendar, Type, Camera, Sparkles, AlertCircle, CheckCircle2, ImagePlus } from 'lucide-react';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/constants.jsx';
+import { parseReceiptWithGemini } from '../utils/geminiOcr.js';
 
 const today = new Date().toISOString().split('T')[0];
 const defaultForm = { title: '', amount: '', category: 'food', date: today, note: '', type: 'expense' };
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
 export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
   const [form, setForm] = useState(defaultForm);
   const [saving, setSaving] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState(null); // null | 'success' | 'error'
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [scanError, setScanError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (expense) {
@@ -22,6 +30,8 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
     } else {
       setForm(defaultForm);
     }
+    setScanStatus(null);
+    setPreviewUrl(null);
   }, [expense, isOpen]);
 
   if (!isOpen) return null;
@@ -29,7 +39,6 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
   const isExpense = form.type === 'expense';
   const cats = isExpense ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
 
-  // Auto-select first category of that type when toggling
   const handleTypeToggle = (newType) => {
     const defaultCat = newType === 'expense' ? 'food' : 'salary';
     setForm({ ...form, type: newType, category: defaultCat });
@@ -44,6 +53,42 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
     onClose();
   };
 
+  const handleReceiptUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show preview
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+    setScanning(true);
+    setScanStatus(null);
+    setScanError('');
+
+    if (!GEMINI_API_KEY || GEMINI_API_KEY.includes('your_')) {
+      setScanError('API Key belum terpasang di sistem.');
+      setScanStatus('error');
+      setScanning(false);
+      return;
+    }
+
+    try {
+      const parsed = await parseReceiptWithGemini(file, GEMINI_API_KEY);
+      setForm((prev) => ({
+        ...prev,
+        ...parsed,
+        type: 'expense',
+      }));
+      setScanStatus('success');
+    } catch (err) {
+      console.error('Receipt scan error:', err);
+      setScanError(err.message || 'Gagal menghubungi AI.');
+      setScanStatus('error');
+    } finally {
+      setScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
@@ -51,8 +96,8 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
         <div className="modal-head">
           <div>
             <div className="modal-icon-ring" style={{
-              background: isExpense ? '#F1F5F9' : '#F0FDF4',
-              color: isExpense ? '#475569' : '#16A34A',
+              background: isExpense ? '#FEF2F2' : '#F0FDF4',
+              color: isExpense ? '#EF4444' : '#16A34A',
             }}>
               {isExpense
                 ? <ArrowUpRight size={24} strokeWidth={2.5} />
@@ -63,6 +108,132 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
           </div>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
+
+        {/* ── RECEIPT SCANNER ── */}
+        {!expense && (
+          <div style={{ marginBottom: 18 }}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={handleReceiptUpload}
+              id="receipt-upload"
+            />
+
+            {/* Scan button (shown when no preview) */}
+            {!previewUrl && !scanning && (
+              <label
+                htmlFor="receipt-upload"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 10,
+                  padding: '14px 20px',
+                  borderRadius: 16,
+                  border: '1.5px dashed var(--border)',
+                  background: 'var(--muted)',
+                  cursor: 'pointer',
+                  transition: 'all .18s',
+                  color: 'var(--ink-2)',
+                  fontWeight: 600,
+                  fontSize: '0.88rem',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--violet)';
+                  e.currentTarget.style.background = 'rgba(141,97,255,0.06)';
+                  e.currentTarget.style.color = 'var(--violet)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.background = 'var(--muted)';
+                  e.currentTarget.style.color = 'var(--ink-2)';
+                }}
+              >
+                <div style={{
+                  width: 34, height: 34, borderRadius: 10,
+                  background: 'rgba(141,97,255,0.1)', color: 'var(--violet)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Camera size={18} />
+                </div>
+                Scan Receipt / Upload Struk
+                <Sparkles size={14} style={{ color: 'var(--violet)', marginLeft: 'auto' }} />
+              </label>
+            )}
+
+            {/* Scanning state */}
+            {scanning && (
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                gap: 12, padding: '20px',
+                borderRadius: 16, background: 'rgba(141,97,255,0.05)',
+                border: '1.5px solid rgba(141,97,255,0.2)',
+              }}>
+                {previewUrl && (
+                  <img
+                    src={previewUrl} alt="Receipt preview"
+                    style={{ width: '100%', maxHeight: 140, objectFit: 'contain', borderRadius: 10, opacity: 0.85 }}
+                  />
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--violet)' }}>
+                  <div className="spinner-sm" />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 600 }}>AI sedang membaca struk kamu…</span>
+                </div>
+              </div>
+            )}
+
+            {/* Preview + status (after scan) */}
+            {!scanning && previewUrl && (
+              <div style={{
+                borderRadius: 16,
+                border: `1.5px solid ${scanStatus === 'success' ? '#BBF7D0' : scanStatus === 'error' ? '#FECACA' : 'var(--border)'}`,
+                overflow: 'hidden',
+                background: scanStatus === 'success' ? '#F0FDF4' : scanStatus === 'error' ? '#FEF2F2' : 'var(--muted)',
+              }}>
+                <img
+                  src={previewUrl} alt="Receipt"
+                  style={{ width: '100%', maxHeight: 130, objectFit: 'contain', display: 'block', padding: '10px' }}
+                />
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderTop: '1px solid rgba(0,0,0,0.04)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    {scanStatus === 'success' ? (
+                      <>
+                        <CheckCircle2 size={15} color="#16A34A" />
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#16A34A' }}>Struk berhasil dibaca!</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={15} color="#EF4444" />
+                        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#EF4444' }}>
+                          {scanError || 'Gagal membaca. Isi manual ya.'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <label
+                    htmlFor="receipt-upload"
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 5,
+                      fontSize: '0.75rem', fontWeight: 700,
+                      color: 'var(--ink-2)', cursor: 'pointer',
+                      padding: '4px 10px', borderRadius: 8,
+                      background: 'var(--muted)',
+                    }}
+                  >
+                    <ImagePlus size={13} /> Ganti
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Type toggle */}
         <div className="type-toggle">
@@ -120,7 +291,19 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
           </div>
 
           <div className="f-group">
-            <label className="f-label">Category</label>
+            <label className="f-label">
+              Category
+              {scanStatus === 'success' && (
+                <span style={{
+                  marginLeft: 8, fontSize: '0.62rem', fontWeight: 700,
+                  background: 'rgba(141,97,255,0.12)', color: 'var(--violet)',
+                  padding: '2px 7px', borderRadius: 20,
+                  display: 'inline-flex', alignItems: 'center', gap: 3
+                }}>
+                  <Sparkles size={9} /> AI picked
+                </span>
+              )}
+            </label>
             <div className="cat-grid">
               {cats.map((cat) => {
                 const Icon = cat.icon;
@@ -159,11 +342,11 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
 
           <div className="modal-actions">
             <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn-save" disabled={saving}
+            <button type="submit" className="btn-save" disabled={saving || scanning}
               style={{ background: isExpense ? '#334155' : '#16A34A' }}
             >
               <Save size={16} />
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? 'Saving…' : scanning ? 'Scanning…' : 'Save'}
             </button>
           </div>
         </form>

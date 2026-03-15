@@ -626,5 +626,6 @@ input, textarea, select, button { font-family: inherit !important; outline: none
   background: linear-gradient(150deg, var(--v1) 0%, var(--v2) 100%);
 }
 .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .75s linear infinite; }
+.spinner-sm { width: 18px; height: 18px; border: 2.5px solid rgba(141,97,255,.25); border-top-color: var(--violet); border-radius: 50%; animation: spin .65s linear infinite; flex-shrink: 0; }
 .loading-txt { font-size: 0.82rem; font-weight: 700; color: rgba(255,255,255,.7); }
 @keyframes spin { to { transform: rotate(360deg); } }
