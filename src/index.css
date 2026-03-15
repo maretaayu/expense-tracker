@@ -1,0 +1,3 @@
+/* global reset – keep minimal since App.css handles most */
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
