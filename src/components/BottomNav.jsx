@@ -1,8 +1,8 @@
 import { Home, BarChart2, Plus } from 'lucide-react';
 
 const TABS = [
-  { id: 'home',   label: 'Beranda', Icon: Home },
-  { id: 'report', label: 'Laporan', Icon: BarChart2 },
+  { id: 'home',   label: 'Home', Icon: Home },
+  { id: 'report', label: 'Report', Icon: BarChart2 },
 ];
 
 export default function BottomNav({ activeTab, setActiveTab, onFab, showFab }) {
@@ -27,7 +27,7 @@ export default function BottomNav({ activeTab, setActiveTab, onFab, showFab }) {
 
       {/* Center FAB slot */}
       <div className="bottom-nav-fab-slot">
-        <button className="fab" onClick={onFab} aria-label="Tambah">
+        <button className="fab" onClick={onFab} aria-label="Add">
           <Plus size={28} strokeWidth={2.5} />
         </button>
       </div>

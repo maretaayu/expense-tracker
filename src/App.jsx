@@ -13,7 +13,7 @@ import BottomNav from './components/BottomNav';
 import { getGreeting, getDailyQuote, formatCurrency } from './utils/constants.jsx';
 import './App.css';
 
-const FULL_MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const FULL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
 function groupByDate(expenses) {
   const today = new Date(); today.setHours(0,0,0,0);
@@ -23,9 +23,9 @@ function groupByDate(expenses) {
     const d = e.createdAt?.toDate ? e.createdAt.toDate() : new Date(e.date || Date.now());
     const day = new Date(d); day.setHours(0,0,0,0);
     let label;
-    if (day.getTime() === today.getTime()) label = 'Hari ini';
-    else if (day.getTime() === yesterday.getTime()) label = 'Kemarin';
-    else label = new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    if (day.getTime() === today.getTime()) label = 'Today';
+    else if (day.getTime() === yesterday.getTime()) label = 'Yesterday';
+    else label = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
     const key = `${day.getTime()}__${label}`;
     if (!groups[key]) groups[key] = { label, items: [], ts: day.getTime(), total: 0 };
     groups[key].items.push(e);
@@ -73,28 +73,28 @@ export default function App() {
     return (
       <div className="loading-screen">
         <div className="spinner" />
-        <p className="loading-txt">Memuat data…</p>
+        <p className="loading-txt">Loading data…</p>
       </div>
     );
   }
 
   if (!user) return <LoginPage />;
 
-  const firstName = user.displayName?.split(' ')[0] || 'Kamu';
+  const firstName = user.displayName?.split(' ')[0] || 'You';
   const initials  = (user.displayName || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
 
   const hour = now.getHours();
-  let greeting = 'Selamat Pagi';
-  let motivation = 'Semangat mengatur keuanganmu hari ini.';
-  if (hour >= 12 && hour < 15) {
-      greeting = 'Selamat Siang';
-      motivation = 'Tetap produktif, kontrol pengeluaranmu.';
-  } else if (hour >= 15 && hour < 18) {
-      greeting = 'Selamat Sore';
-      motivation = 'Waktu pas buat cek budgetmu hari ini.';
-  } else if (hour >= 18) {
-      greeting = 'Selamat Malam';
-      motivation = 'Catat pengeluaran sebelum istirahat.';
+  let greeting = 'Good Morning';
+  let motivation = 'Manage your finances with confidence today.';
+  if (hour >= 12 && hour < 17) {
+      greeting = 'Good Afternoon';
+      motivation = 'Stay productive, control your spending.';
+  } else if (hour >= 17 && hour < 21) {
+      greeting = 'Good Evening';
+      motivation = 'A good time to review today’s budget.';
+  } else if (hour >= 21) {
+      greeting = 'Good Night';
+      motivation = 'Track your expenses before you rest.';
   }
 
   return (
@@ -115,7 +115,7 @@ export default function App() {
               </div>
             </div>
             
-            <button className="hero-notif" onClick={() => signOut(auth)} title="Keluar" style={{ border: 'none', background: 'transparent' }}>
+            <button className="hero-notif" onClick={() => signOut(auth)} title="Logout" style={{ border: 'none', background: 'transparent' }}>
               <LogOut size={20} color="#fff" />
             </button>
           </div>
@@ -127,9 +127,9 @@ export default function App() {
               {formatCurrency(balance)}
             </p>
             <div className="hero-metrics">
-              <span className="hero-sub">+ {formatCurrency(totalIncome)} bulan ini</span>
+              <span className="hero-sub">+ {formatCurrency(totalIncome)} this month</span>
               <span className="hero-sub-divider">•</span>
-              <span className="hero-sub">{expenses.length} Transaksi</span>
+              <span className="hero-sub">{expenses.length} Transactions</span>
             </div>
           </div>
         </div>
@@ -148,9 +148,9 @@ export default function App() {
 
             {/* Transaction section */}
             <div className="tx-section-header">
-              <p className="tx-section-title">Transaksi Terakhir</p>
+              <p className="tx-section-title">Recent Transactions</p>
               <div className="tx-section-actions">
-                <button className="tx-period-badge" onClick={() => setActiveTab('report')}>Lihat Laporan</button>
+                <button className="tx-period-badge" onClick={() => setActiveTab('report')}>View Report</button>
               </div>
             </div>
 
@@ -158,7 +158,7 @@ export default function App() {
 
             <div className="expense-list">
               {loading ? (
-                <p className="list-state-msg">Mengambil data…</p>
+                <p className="list-state-msg">Fetching data…</p>
               ) : grouped.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-emoji">
@@ -167,8 +167,8 @@ export default function App() {
                       <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z"/>
                     </svg>
                   </div>
-                  <p className="empty-title">Belum ada transaksi</p>
-                  <p className="empty-sub">Ketuk + untuk mulai mencatat</p>
+                  <p className="empty-title">No transactions yet</p>
+                  <p className="empty-sub">Tap + to start tracking</p>
                 </div>
               ) : (
                 grouped.map((group) => (

@@ -9,7 +9,7 @@ export default function FilterBar({ filter, setFilter }) {
         <input
           type="text"
           className="search-input"
-          placeholder="Cari transaksi…"
+          placeholder="Search transactions…"
           value={filter.search}
           onChange={(e) => setFilter((p) => ({ ...p, search: e.target.value }))}
         />
@@ -17,9 +17,9 @@ export default function FilterBar({ filter, setFilter }) {
 
       <div className="type-tabs">
         {[
-          { value: '',        label: 'Semua' },
-          { value: 'expense', label: 'Pengeluaran' },
-          { value: 'income',  label: 'Pemasukan' },
+          { value: '',        label: 'All' },
+          { value: 'expense', label: 'Expense' },
+          { value: 'income',  label: 'Income' },
         ].map((t) => (
           <button
             key={t.value}
@@ -35,7 +35,7 @@ export default function FilterBar({ filter, setFilter }) {
         <button
           className={`filter-chip${filter.category === '' ? ' active' : ''}`}
           onClick={() => setFilter((p) => ({ ...p, category: '' }))}
-        >Semua</button>
+        >All</button>
         {EXPENSE_CATEGORIES.map((cat) => (
           <button
             key={cat.value}

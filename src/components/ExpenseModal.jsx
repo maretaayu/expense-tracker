@@ -51,15 +51,15 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
         <div className="modal-head">
           <div>
             <div className="modal-icon-ring" style={{
-              background: isExpense ? '#FDF5F5' : '#F2FAF6',
-              color: isExpense ? '#E05C5C' : '#3B9E78',
+              background: isExpense ? '#F1F5F9' : '#F0FDF4',
+              color: isExpense ? '#475569' : '#16A34A',
             }}>
               {isExpense
                 ? <ArrowUpRight size={24} strokeWidth={2.5} />
                 : <ArrowDownLeft size={24} strokeWidth={2.5} />
               }
             </div>
-            <p className="modal-title">{expense ? 'Edit' : 'Tambah'} Transaksi</p>
+            <p className="modal-title">{expense ? 'Edit' : 'Add'} Transaction</p>
           </div>
           <button className="modal-close" onClick={onClose}><X size={18} /></button>
         </div>
@@ -71,24 +71,24 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
             className={`type-btn${isExpense ? ' active-expense' : ''}`}
             onClick={() => handleTypeToggle('expense')}
           >
-            <ArrowUpRight size={16} /> Pengeluaran
+            <ArrowUpRight size={16} /> Expense
           </button>
           <button
             type="button"
             className={`type-btn${!isExpense ? ' active-income' : ''}`}
             onClick={() => handleTypeToggle('income')}
           >
-            <ArrowDownLeft size={16} /> Pemasukan
+            <ArrowDownLeft size={16} /> Income
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="f-group">
-            <label className="f-label"><Type size={13} /> Judul</label>
+            <label className="f-label"><Type size={13} /> Title</label>
             <input
               className="f-input"
               type="text"
-              placeholder={isExpense ? 'e.g. Makan siang' : 'e.g. Gaji bulan ini'}
+              placeholder={isExpense ? 'e.g. Lunch' : 'e.g. Monthly salary'}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               required
@@ -97,7 +97,7 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
 
           <div className="f-row">
             <div className="f-group">
-              <label className="f-label"><DollarSign size={13} /> Jumlah (IDR)</label>
+              <label className="f-label"><DollarSign size={13} /> Amount (IDR)</label>
               <input
                 className="f-input"
                 type="number"
@@ -108,7 +108,7 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
               />
             </div>
             <div className="f-group">
-              <label className="f-label"><Calendar size={13} /> Tanggal</label>
+              <label className="f-label"><Calendar size={13} /> Date</label>
               <input
                 className="f-input"
                 type="date"
@@ -120,7 +120,7 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
           </div>
 
           <div className="f-group">
-            <label className="f-label">Kategori</label>
+            <label className="f-label">Category</label>
             <div className="cat-grid">
               {cats.map((cat) => {
                 const Icon = cat.icon;
@@ -147,10 +147,10 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
           </div>
 
           <div className="f-group">
-            <label className="f-label">Catatan (Opsional)</label>
+            <label className="f-label">Note (Optional)</label>
             <textarea
               className="f-input f-textarea"
-              placeholder="Tambahkan detail…"
+              placeholder="Add details…"
               value={form.note}
               onChange={(e) => setForm({ ...form, note: e.target.value })}
               rows={2}
@@ -158,12 +158,12 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense }) {
           </div>
 
           <div className="modal-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>Batal</button>
+            <button type="button" className="btn-cancel" onClick={onClose}>Cancel</button>
             <button type="submit" className="btn-save" disabled={saving}
-              style={{ background: isExpense ? '#E05C5C' : '#3B9E78' }}
+              style={{ background: isExpense ? '#334155' : '#16A34A' }}
             >
               <Save size={16} />
-              {saving ? 'Menyimpan…' : 'Simpan'}
+              {saving ? 'Saving…' : 'Save'}
             </button>
           </div>
         </form>

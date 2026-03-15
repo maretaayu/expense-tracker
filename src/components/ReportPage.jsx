@@ -50,7 +50,7 @@ export default function ReportPage({ expenses }) {
     setMonth(m); setYear(y);
   };
 
-  const monthName = new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(new Date(year, month, 1));
+  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date(year, month, 1));
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth();
 
   // Chart Data: Group by Month for the selected Year
@@ -67,7 +67,7 @@ export default function ReportPage({ expenses }) {
       }
     });
 
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
     return Object.keys(map).map(m => ({
         monthIndex: Number(m),
@@ -100,19 +100,19 @@ export default function ReportPage({ expenses }) {
           className={`report-type-tab${reportType === 'expense' ? ' active' : ''}`}
           onClick={() => setReportType('expense')}
         >
-          Pengeluaran
+          Expenses
         </button>
         <button 
           className={`report-type-tab${reportType === 'income' ? ' active' : ''}`}
           onClick={() => setReportType('income')}
         >
-          Pemasukan
+          Income
         </button>
       </div>
 
       {/* Monthly Chart */}
       <div style={{ background: 'var(--card)', borderRadius: 'var(--r-2xl)', padding: '24px 16px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', border: '1px solid var(--border)' }}>
-        <p style={{fontSize:'1.1rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em', marginBottom: '24px', paddingLeft: '8px'}}>Perbandingan per Bulan</p>
+        <p style={{fontSize:'1.1rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em', marginBottom: '24px', paddingLeft: '8px'}}>Monthly Comparison</p>
         <div style={{ width: '100%', height: 180 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={yearlyChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
@@ -160,7 +160,7 @@ export default function ReportPage({ expenses }) {
         }} />
 
         <p style={{ fontSize: '0.85rem', fontWeight: 600, color: reportType === 'expense' ? '#334155' : '#16A34A', letterSpacing: '0.04em', textTransform: 'uppercase', marginBottom: '8px' }}>
-          Total {reportType === 'expense' ? 'Pengeluaran' : 'Pemasukan'}
+          Total {reportType === 'expense' ? 'Expenses' : 'Income'}
         </p>
         <p style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--ink)', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
           {formatCurrency(total)}
@@ -169,7 +169,7 @@ export default function ReportPage({ expenses }) {
         {highestCategory && total > 0 && (
           <div style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-start', gap: '10px', background: 'rgba(255,255,255,0.7)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.5)' }}>
             <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink-2)', lineHeight: 1.4 }}>
-              Sebagian besar {reportType === 'expense' ? 'pengeluaran' : 'pemasukan'} bulan ini ada di kategori <strong style={{color:'var(--ink)'}}>{highestCategory.label}</strong> ({highestCategory.pct}%).
+              Most of your {reportType === 'expense' ? 'expenses' : 'income'} this month is in the <strong style={{color:'var(--ink)'}}>{highestCategory.label}</strong> category ({highestCategory.pct}%).
             </p>
           </div>
         )}
@@ -177,15 +177,15 @@ export default function ReportPage({ expenses }) {
 
       {/* Category List */}
       <div className="report-list-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 16}}>
-        <p style={{fontSize:'1.1rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em'}}>Rincian Kategori</p>
-        <p style={{fontSize:'0.85rem', fontWeight:600, color:'var(--ink-3)'}}>{breakdown.length} Kategori</p>
+        <p style={{fontSize:'1.1rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em'}}>Category Breakdown</p>
+        <p style={{fontSize:'0.85rem', fontWeight:600, color:'var(--ink-3)'}}>{breakdown.length} Categories</p>
       </div>
 
       <div className="report-cat-list" style={{display:'flex', flexDirection:'column', gap: 16}}>
         {breakdown.length === 0 ? (
           <div style={{ textAlign:'center', padding:'40px 20px', background:'var(--card)', borderRadius:'var(--r-xl)', border:'1px dashed var(--border)' }}>
             <p style={{color:'var(--ink-3)', fontSize:'0.9rem', fontWeight:500}}>
-              Belum ada data untuk bulan ini.
+              No data for this month.
             </p>
           </div>
         ) : breakdown.map((item) => {
@@ -202,7 +202,7 @@ export default function ReportPage({ expenses }) {
                 </div>
                 <div style={{flex: 1}}>
                   <p style={{fontSize:'0.95rem', fontWeight:800, color:'var(--ink)', marginBottom: 2}}>{item.label}</p>
-                  <p style={{fontSize:'0.8rem', fontWeight:600, color:'var(--ink-3)'}}>{item.pct}% dari total</p>
+                  <p style={{fontSize:'0.8rem', fontWeight:600, color:'var(--ink-3)'}}>{item.pct}% of total</p>
                 </div>
                 <div style={{textAlign:'right'}}>
                   <p style={{fontSize:'1.05rem', fontWeight:800, color:'var(--ink)', letterSpacing:'-0.01em'}}>{formatCurrency(item.amount)}</p>

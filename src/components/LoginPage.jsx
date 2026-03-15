@@ -8,7 +8,7 @@ export default function LoginPage() {
       await signInWithPopup(auth, googleProvider);
     } catch (err) {
       console.error(err);
-      alert('Gagal masuk. Coba lagi ya!');
+      alert('Failed to sign in. Please try again!');
     }
   };
 
@@ -19,9 +19,9 @@ export default function LoginPage() {
           <Wallet size={48} strokeWidth={1.8} color="#5B4FE8" />
         </div>
 
-        <h1 className="login-title">Dompetku</h1>
+        <h1 className="login-title">ExpenseTracker</h1>
         <p className="login-sub">
-          Catat pengeluaran harianmu dengan<br />cepat, rapi, dan menyenangkan.
+          Track your daily expenses quickly,<br />neatly, and easily.
         </p>
 
         <button className="login-btn" onClick={handleLogin}>
@@ -30,10 +30,10 @@ export default function LoginPage() {
             alt="Google"
             width="24"
           />
-          Masuk dengan Google
+          Sign in with Google
         </button>
 
-        <p className="login-footer">© 2026 Dompetku · Built with ☕</p>
+        <p className="login-footer">© 2026 ExpenseTracker · Built with ☕</p>
       </div>
     </div>
   );
