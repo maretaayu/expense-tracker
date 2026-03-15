@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, LogOut, ChevronDown, Bell, ChevronRight, Sparkles, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, LogOut, ChevronDown, Bell, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useRef } from 'react';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth } from './firebase';
+import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth, db } from './firebase';
 import { useExpenses } from './hooks/useExpenses';
 import SummarySection from './components/SummarySection';
 import FilterBar from './components/FilterBar';
@@ -10,10 +10,14 @@ import ExpenseCard from './components/ExpenseCard';
 import ExpenseModal from './components/ExpenseModal';
 import LoginPage from './components/LoginPage';
 import ReportPage from './components/ReportPage';
+import BudgetPage from './components/BudgetPage';
 import BottomNav from './components/BottomNav';
-import { getGreeting, getDailyQuote, formatCurrency } from './utils/constants.jsx';
+import { useCategories } from './hooks/useCategories';
+import { useBudgets } from './hooks/useBudgets';
+import { getGreeting, getDailyQuote, formatCurrency, EXPENSE_CATEGORIES, INCOME_CATEGORIES } from './utils/constants.jsx';
 import EntryMethodPicker from './components/EntryMethodPicker';
 import { parseReceiptWithGemini } from './utils/geminiOcr';
+import { getDoc, doc } from 'firebase/firestore';
 import './App.css';
 
 const FULL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -66,21 +70,57 @@ export default function App() {
   const [showMagicSuccess, setShowMagicSuccess] = useState(false);
   const [magicError, setMagicError] = useState(null);
   const [filter, setFilter] = useState({ search: '', category: '', type: '' });
+  const [autoScan, setAutoScan] = useState(false);
   
   const magicFileInputRef = useRef(null);
 
   const { expenses, loading, addExpense, deleteExpense, updateExpense } = useExpenses(user);
+  const { customCategories, addCategory } = useCategories(user);
+  const { budgets } = useBudgets();
+
+  const allExpenseCategories = useMemo(() => [
+    ...EXPENSE_CATEGORIES,
+    ...customCategories
+  ], [customCategories]);
+
+  const allCategories = useMemo(() => [
+    ...allExpenseCategories,
+    ...INCOME_CATEGORIES
+  ], [allExpenseCategories]);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => { setUser(u); setAuthLoading(false); });
+    const unsub = onAuthStateChanged(auth, (u) => { 
+      setUser(u); 
+      setAuthLoading(false); 
+    });
     return unsub;
   }, []);
 
-  const { balance, totalIncome, totalExpense } = useMemo(() => {
-    const totalIncome  = expenses.filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
-    const totalExpense = expenses.filter(e => e.type !== 'income').reduce((s, e) => s + Number(e.amount), 0);
-    return { totalIncome, totalExpense, balance: totalIncome - totalExpense };
-  }, [expenses]);
+
+  const { balance, totalIncome, totalExpense, totalBudget, spendPercent, monthTransCount } = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    const monthItems = expenses.filter(e => {
+      const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+
+    const totalIncome  = monthItems.filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
+    const totalExpense = monthItems.filter(e => e.type !== 'income').reduce((s, e) => s + Number(e.amount), 0);
+    const totalBudget = budgets.reduce((acc, b) => acc + b.limit, 0);
+    const spendPercent = totalBudget > 0 ? Math.min((totalExpense / totalBudget) * 100, 100) : 0;
+    
+    return { 
+      totalIncome, 
+      totalExpense, 
+      balance: totalIncome - totalExpense, 
+      totalBudget, 
+      spendPercent,
+      monthTransCount: monthItems.length
+    };
+  }, [expenses, budgets]);
 
   const filtered = useMemo(() => {
     return expenses.filter((e) => {
@@ -172,21 +212,42 @@ export default function App() {
               </div>
             </div>
             
-            <button className="hero-notif" onClick={() => signOut(auth)} title="Logout" style={{ border: 'none', background: 'transparent' }}>
-              <LogOut size={20} color="var(--ink)" />
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button className="hero-notif" onClick={() => signOut(auth)} title="Logout" style={{ border: 'none', background: 'transparent' }}>
+                <LogOut size={20} color="var(--ink)" />
+              </button>
+            </div>
           </div>
 
           {/* Balance */}
           <div className="hero-balance-area">
-            <p className="hero-label">Current Balance</p>
-            <p className={`hero-amount${balance < 0 ? ' neg' : ''}`}>
-              {formatCurrency(balance)}
+            <p className="hero-label">Monthly Spending</p>
+            <p className={`hero-amount neg`}>
+              -{formatCurrency(totalExpense)}
             </p>
+            
+            {totalBudget > 0 && (
+              <div style={{ width: '80%', margin: '14px auto 0', textAlign: 'left' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--ink-3)', marginBottom: '4px' }}>
+                  <span>Budget Progress</span>
+                  <span>{Math.round(spendPercent)}%</span>
+                </div>
+                <div style={{ height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ 
+                    height: '100%', 
+                    width: `${spendPercent}%`, 
+                    background: spendPercent > 100 ? 'var(--r)' : 'var(--violet)',
+                    borderRadius: '10px',
+                    transition: 'width 0.5s ease'
+                  }} />
+                </div>
+              </div>
+            )}
+
             <div className="hero-metrics">
-              <span className="hero-sub">+ {formatCurrency(totalIncome)} this month</span>
+              <span className="hero-sub">Balance {formatCurrency(balance)}</span>
               <span className="hero-sub-divider">•</span>
-              <span className="hero-sub">{expenses.length} Transactions</span>
+              <span className="hero-sub">{monthTransCount} Trans.</span>
             </div>
           </div>
         </div>
@@ -206,13 +267,20 @@ export default function App() {
             {/* Transaction section */}
 
             <div className="section-head">
-              <h3 className="section-title">Recent Transactions</h3>
+              <h3 className="section-title">Today's Activity</h3>
+              <button 
+                className="section-link" 
+                onClick={() => setActiveTab('transactions')}
+                style={{ background: 'none', border: 'none', color: 'var(--violet)', fontWeight: 700, fontSize: '0.85rem' }}
+              >
+                See All
+              </button>
             </div>
 
             <div className="expense-list">
               {loading ? (
                 <p className="list-state-msg">Fetching data…</p>
-              ) : grouped.length === 0 ? (
+              ) : expenses.length === 0 ? (
                 <div className="empty-state">
                   <div className="empty-emoji">
                     <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
@@ -224,6 +292,60 @@ export default function App() {
                   <p className="empty-sub">Tap + to start tracking</p>
                 </div>
               ) : (
+                (() => {
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  
+                  const todayTransactions = expenses.filter(e => {
+                    const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+                    const dNorm = new Date(d);
+                    dNorm.setHours(0,0,0,0);
+                    return dNorm.getTime() === today.getTime();
+                  }).sort((a,b) => {
+                    const da = a.date ? new Date(a.date) : (a.createdAt?.toDate ? a.createdAt.toDate() : new Date());
+                    const db = b.date ? new Date(b.date) : (b.createdAt?.toDate ? b.createdAt.toDate() : new Date());
+                    return db - da;
+                  });
+
+                  if (todayTransactions.length === 0) {
+                    return (
+                      <div className="empty-state" style={{ padding: '20px 0' }}>
+                        <div className="empty-emoji" style={{ opacity: 0.5 }}>
+                          <CheckCircle2 size={40} color="var(--violet)" />
+                        </div>
+                        <p className="empty-title" style={{ fontSize: '1rem' }}>Today is empty</p>
+                        <p className="empty-sub">No transactions recorded today.</p>
+                      </div>
+                    );
+                  }
+
+                  return todayTransactions.map((expense) => (
+                    <ExpenseCard
+                      key={expense.id}
+                      expense={expense}
+                      category={allCategories.find(c => c.value === expense.category)}
+                      onEdit={(e) => { setEditingExpense(e); setModalOpen(true); }}
+                      onDelete={deleteExpense}
+                    />
+                  ));
+                })()
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'transactions' && (
+          <>
+            <div className="section-head" style={{ marginBottom: '16px' }}>
+              <h3 className="section-title" style={{ fontSize: '1.4rem' }}>Transaction History</h3>
+            </div>
+            
+            <FilterBar filter={filter} setFilter={setFilter} />
+
+            <div className="expense-list" style={{ marginTop: '20px' }}>
+              {grouped.length === 0 ? (
+                <p className="list-state-msg">No transactions found matching your filters.</p>
+              ) : (
                 grouped.map((group) => (
                   <div key={group.label} className="date-group">
                     <div className="date-group-top">
@@ -232,19 +354,27 @@ export default function App() {
                         <p className="date-group-total">Total -{formatCurrency(group.total)}</p>
                       )}
                     </div>
-                    {group.items.map((expense) => (
-                      <ExpenseCard
-                        key={expense.id}
-                        expense={expense}
-                        onEdit={(e) => { setEditingExpense(e); setModalOpen(true); }}
-                        onDelete={deleteExpense}
-                      />
-                    ))}
+                      {group.items.map((expense) => (
+                        <ExpenseCard
+                          key={expense.id}
+                          expense={expense}
+                          category={allCategories.find(c => c.value === expense.category)}
+                          onEdit={(e) => { setEditingExpense(e); setModalOpen(true); }}
+                          onDelete={deleteExpense}
+                        />
+                      ))}
                   </div>
                 ))
               )}
             </div>
           </>
+        )}
+
+        {activeTab === 'budget' && (
+          <BudgetPage 
+            expenses={expenses} 
+            categories={allExpenseCategories}
+          />
         )}
 
         {activeTab === 'report' && <ReportPage expenses={expenses} />}
@@ -325,12 +455,12 @@ export default function App() {
       {/* ── MODAL ── */}
       <ExpenseModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={async (data) => {
-          if (editingExpense) await updateExpense(editingExpense.id, data);
-          else await addExpense(data);
-        }}
+        onClose={() => { setModalOpen(false); setEditingExpense(null); setAutoScan(false); }}
+        onSave={(data) => editingExpense ? updateExpense(editingExpense.id, data) : addExpense(data)}
         expense={editingExpense}
+        autoScan={autoScan}
+        customCategories={customCategories}
+        onAddCategory={addCategory}
       />
     </div>
   );

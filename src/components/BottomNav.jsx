@@ -1,8 +1,10 @@
-import { Home, BarChart2, Plus } from 'lucide-react';
+import { Home, BarChart2, List, Wallet, Plus } from 'lucide-react';
 
 const TABS = [
-  { id: 'home',   label: 'Home', Icon: Home },
-  { id: 'report', label: 'Report', Icon: BarChart2 },
+  { id: 'home',         label: 'Home',    Icon: Home },
+  { id: 'transactions', label: 'History', Icon: List },
+  { id: 'budget',       label: 'Budget',  Icon: Wallet },
+  { id: 'report',       label: 'Report',  Icon: BarChart2 },
 ];
 
 export default function BottomNav({ activeTab, setActiveTab, onFab, showFab }) {

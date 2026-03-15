@@ -1,18 +1,21 @@
 import {
   Utensils, Car, ShoppingBag, Gamepad2, HeartPulse, BookOpen,
   Zap, TrendingUp, Package, Briefcase, DollarSign, Gift, Wallet,
+  Tv, Heart, Sparkle, Home, Coffee, Wifi, Droplet, Shirt, Cookie, Users, Star
 } from 'lucide-react';
 
 export const EXPENSE_CATEGORIES = [
-  { label: 'Food',          value: 'food',          icon: Utensils,    color: '#F97316', bg: '#FFF7ED' },
-  { label: 'Transport',     value: 'transport',      icon: Car,         color: '#0EA5E9', bg: '#F0F9FF' },
-  { label: 'Shopping',      value: 'shopping',       icon: ShoppingBag, color: '#D946EF', bg: '#FDF4FF' },
-  { label: 'Entertainment', value: 'entertainment',  icon: Gamepad2,    color: '#8B5CF6', bg: '#F5F3FF' },
-  { label: 'Health',        value: 'health',         icon: HeartPulse,  color: '#EF4444', bg: '#FEF2F2' },
-  { label: 'Education',     value: 'education',      icon: BookOpen,    color: '#6366F1', bg: '#EEF2FF' },
-  { label: 'Bills',         value: 'bills',          icon: Zap,         color: '#EAB308', bg: '#FEFCE8' },
-  { label: 'Investment',    value: 'investment',     icon: TrendingUp,  color: '#10B981', bg: '#ECFDF5' },
-  { label: 'Others',        value: 'other',          icon: Package,     color: '#64748B', bg: '#F8FAFC' },
+  { label: 'Food & Drinks',     value: 'food',          icon: Utensils,    color: '#F97316', bg: '#FFF7ED' },
+  { label: 'Transportation',    value: 'transport',      icon: Car,         color: '#0EA5E9', bg: '#F0F9FF' },
+  { label: 'Shopping',          value: 'shopping',       icon: ShoppingBag, color: '#D946EF', bg: '#FDF4FF' },
+  { label: 'Housing',           value: 'housing',        icon: Home,        color: '#6366F1', bg: '#EEF2FF' },
+  { label: 'Subscription',      value: 'subscription',   icon: Tv,          color: '#8B5CF6', bg: '#F5F3FF' },
+  { label: 'Health',            value: 'health',         icon: HeartPulse,  color: '#EF4444', bg: '#FEF2F2' },
+  { label: 'Bills & Utilities', value: 'bills',          icon: Zap,         color: '#EAB308', bg: '#FEFCE8' },
+  { label: 'Education',         value: 'education',      icon: BookOpen,    color: '#3B82F6', bg: '#EFF6FF' },
+  { label: 'Self Care',         value: 'selfcare',       icon: Sparkle,     color: '#EC4899', bg: '#FDF2F8' },
+  { label: 'Charity',           value: 'charity',        icon: Heart,       color: '#F43F5E', bg: '#FFF1F2' },
+  { label: 'General',           value: 'other',          icon: Package,     color: '#64748B', bg: '#F8FAFC' },
 ];
 
 export const INCOME_CATEGORIES = [

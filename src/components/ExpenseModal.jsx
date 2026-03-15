@@ -8,8 +8,10 @@ const defaultForm = { title: '', amount: '', category: 'food', date: today, note
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
-export default function ExpenseModal({ isOpen, onClose, onSave, expense, autoScan }) {
+export default function ExpenseModal({ isOpen, onClose, onSave, expense, autoScan, customCategories = [], onAddCategory }) {
   const [form, setForm] = useState(defaultForm);
+  const [newCatName, setNewCatName] = useState('');
+  const [isAddingCat, setIsAddingCat] = useState(false);
   const [saving, setSaving] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState(null); // null | 'success' | 'error'
@@ -50,6 +52,14 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense, autoSca
   const handleTypeToggle = (newType) => {
     const defaultCat = newType === 'expense' ? 'food' : 'salary';
     setForm({ ...form, type: newType, category: defaultCat });
+  };
+
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return;
+    await onAddCategory(newCatName);
+    setForm({ ...form, category: newCatName.toLowerCase().replace(/\s+/g, '_') });
+    setNewCatName('');
+    setIsAddingCat(false);
   };
 
   const handleSubmit = async (e) => {
@@ -327,12 +337,74 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense, autoSca
                       background: selected ? cat.bg : 'var(--raised)',
                       color: selected ? cat.color : 'var(--ink-3)',
                     }}>
-                      <Icon size={17} strokeWidth={2} />
+                      <Icon size={17} strokeWidth={2.5} />
                     </span>
                     <span className="cat-option-label">{cat.label}</span>
                   </button>
                 );
               })}
+
+              {isExpense && customCategories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  className={`cat-option${form.category === cat.value ? ' selected' : ''}`}
+                  style={{ '--cat-color': '#64748B' }}
+                  onClick={() => setForm({ ...form, category: cat.value })}
+                >
+                  <span className="cat-option-icon" style={{
+                    background: form.category === cat.value ? '#F8FAFC' : 'var(--raised)',
+                    color: form.category === cat.value ? '#64748B' : 'var(--ink-3)',
+                  }}>
+                    <cat.icon size={17} strokeWidth={2.5} />
+                  </span>
+                  <span className="cat-option-label">{cat.label}</span>
+                </button>
+              ))}
+
+              {isExpense && (
+                <div style={{ alignSelf: 'center' }}>
+                  {!isAddingCat ? (
+                    <button 
+                      type="button" 
+                      onClick={() => setIsAddingCat(true)}
+                      style={{ 
+                        fontSize: '0.7rem', 
+                        fontWeight: 700, 
+                        color: 'var(--violet)', 
+                        background: 'rgba(141,97,255,0.1)',
+                        border: 'none',
+                        padding: '6px 10px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Plus size={12} /> Add
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <input 
+                        type="text" 
+                        value={newCatName} 
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        placeholder="Name..."
+                        autoFocus
+                        style={{ width: '70px', fontSize: '0.7rem', border: '1px solid var(--border)', borderRadius: '6px', padding: '4px' }}
+                      />
+                      <button 
+                        type="button" 
+                        onClick={handleAddCategory}
+                        className="btn-save"
+                        style={{ padding: '6px', minWidth: 'auto', borderRadius: '6px' }}
+                      >
+                        OK
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

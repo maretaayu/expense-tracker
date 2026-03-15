@@ -1,8 +1,8 @@
 import { Trash2, MessageSquare } from 'lucide-react';
 import { getCategoryByValue, formatCurrency, formatDate } from '../utils/constants.jsx';
 
-export default function ExpenseCard({ expense, onEdit, onDelete }) {
-  const cat = getCategoryByValue(expense.category);
+export default function ExpenseCard({ expense, category, onEdit, onDelete }) {
+  const cat = category || getCategoryByValue(expense.category);
   const Icon = cat.icon;
   const isIncome = expense.type === 'income';
 
