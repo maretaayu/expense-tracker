@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, LogOut, ChevronDown, Bell, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Plus, LogOut, ChevronDown, Bell, ChevronRight, CheckCircle2, AlertCircle, Wallet, Eye, ArrowUpRight } from 'lucide-react';
 import { useRef } from 'react';
 import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth, db } from './firebase';
 import { useExpenses } from './hooks/useExpenses';
-import SummarySection from './components/SummarySection';
+// import SummarySection from './components/SummarySection';
 import FilterBar from './components/FilterBar';
 import ExpenseCard from './components/ExpenseCard';
 import ExpenseModal from './components/ExpenseModal';
@@ -18,6 +18,7 @@ import { getGreeting, getDailyQuote, formatCurrency, EXPENSE_CATEGORIES, INCOME_
 import EntryMethodPicker from './components/EntryMethodPicker';
 import { parseReceiptWithGemini } from './utils/geminiOcr';
 import { getDoc, doc } from 'firebase/firestore';
+import { LineChart, Line, XAxis, ResponsiveContainer } from 'recharts';
 import './App.css';
 
 const FULL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -97,10 +98,12 @@ export default function App() {
   }, []);
 
 
-  const { balance, totalIncome, totalExpense, totalBudget, spendPercent, monthTransCount } = useMemo(() => {
+  const { balance, totalIncome, totalExpense, totalIncomeWeek, totalExpenseWeek, incomePct, expensePct, totalBudget, spendPercent, monthTransCount, weeklyStats } = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
+    let prevIncomeWeek = 0;
+    let prevExpenseWeek = 0;
 
     const monthItems = expenses.filter(e => {
       const d = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
@@ -109,15 +112,61 @@ export default function App() {
 
     const totalIncome  = monthItems.filter(e => e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
     const totalExpense = monthItems.filter(e => e.type !== 'income').reduce((s, e) => s + Number(e.amount), 0);
+    
+    // Main balance displays current month's net performance
+    const balance = totalIncome - totalExpense;
+
     const totalBudget = budgets.reduce((acc, b) => acc + b.limit, 0);
     const spendPercent = totalBudget > 0 ? Math.min((totalExpense / totalBudget) * 100, 100) : 0;
+
+    // Last 7 days spending stats for chart and cards
+    const weeklyStats = [];
+    let totalIncomeWeek = 0;
+    let totalExpenseWeek = 0;
+    
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      
+      const dayIncome = expenses.filter(e => {
+        const ed = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        return ed.toDateString() === d.toDateString() && e.type === 'income';
+      }).reduce((s, e) => s + Number(e.amount), 0);
+
+      const dayExpense = expenses.filter(e => {
+        const ed = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        return ed.toDateString() === d.toDateString() && e.type !== 'income';
+      }).reduce((s, e) => s + Number(e.amount), 0);
+
+      totalIncomeWeek += dayIncome;
+      totalExpenseWeek += dayExpense;
+      weeklyStats.push({ name: dayName, val: dayExpense });
+    }
+    
+    for (let i = 13; i >= 7; i--) {
+      const d = new Date(); d.setDate(now.getDate() - i);
+      const isMatch = (e) => {
+        const ed = e.date ? new Date(e.date) : (e.createdAt?.toDate ? e.createdAt.toDate() : new Date());
+        return ed.toDateString() === d.toDateString();
+      };
+      prevIncomeWeek += expenses.filter(e => isMatch(e) && e.type === 'income').reduce((s, e) => s + Number(e.amount), 0);
+      prevExpenseWeek += expenses.filter(e => isMatch(e) && e.type !== 'income').reduce((s, e) => s + Number(e.amount), 0);
+    }
+    const incomePct = prevIncomeWeek > 0 ? Math.round(((totalIncomeWeek - prevIncomeWeek) / prevIncomeWeek) * 100) : (totalIncomeWeek > 0 ? 100 : 0);
+    const expensePct = prevExpenseWeek > 0 ? Math.round(((totalExpenseWeek - prevExpenseWeek) / prevExpenseWeek) * 100) : (totalExpenseWeek > 0 ? 100 : 0);
     
     return { 
       totalIncome, 
       totalExpense, 
-      balance: totalIncome - totalExpense, 
+      totalIncomeWeek,
+      totalExpenseWeek,
+      incomePct,
+      expensePct,
+      balance, 
       totalBudget, 
       spendPercent,
+      weeklyStats,
       monthTransCount: monthItems.length
     };
   }, [expenses, budgets]);
@@ -180,7 +229,7 @@ export default function App() {
   const firstName = user.displayName?.split(' ')[0] || 'You';
   const initials  = (user.displayName || 'U').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase();
 
-  const hour = now.getHours();
+  const hour = new Date().getHours();
   let greeting = 'Good Morning';
   let motivation = 'Manage your finances with confidence today.';
   if (hour >= 12 && hour < 17) {
@@ -198,82 +247,136 @@ export default function App() {
     <div className="app-container">
       {/* ── HERO GRADIENT HEADER (home only) ── */}
       {activeTab === 'home' && (
-        <div className="hero-header">
-          {/* Top bar */}
-          <div className="hero-bar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left' }}>
-              {user.photoURL
-                ? <img className="hero-avatar" src={user.photoURL} alt={firstName} />
-                : <div className="hero-avatar-placeholder">{initials}</div>
-              }
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{greeting}, {firstName}</span>
-                <span style={{ fontSize: '0.72rem', color: 'var(--ink-3)', marginTop: '2px' }}>{motivation}</span>
+        <div className="hero-section" style={{ 
+          padding: '32px 0 60px', 
+          background: 'radial-gradient(at 0% 0%, #E0E7FF 0%, transparent 50%), radial-gradient(at 100% 0%, #FEE2E2 0%, transparent 50%), #F8F9FE',
+          borderBottomLeftRadius: '0px', 
+          borderBottomRightRadius: '0px',
+          position: 'relative',
+          color: 'var(--ink)',
+          zIndex: 10
+        }}>
+          {/* Header Row */}
+          <div style={{ padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="p" style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid white' }} />
+              ) : (
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--violet)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>{initials}</div>
+              )}
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.6 }}>Hello, {greeting}</p>
+                <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>{firstName}</p>
               </div>
             </div>
-            
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button className="hero-notif" onClick={() => signOut(auth)} title="Logout" style={{ border: 'none', background: 'transparent' }}>
-                <LogOut size={20} color="var(--ink)" />
-              </button>
-            </div>
+            <button style={{ border: 'none', background: 'white', width: 44, height: 44, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink)', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
+              <Bell size={20} />
+            </button>
           </div>
 
-          {/* Balance */}
-          <div className="hero-balance-area">
-            <p className="hero-label">Monthly Spending</p>
-            <p className={`hero-amount neg`}>
-              -{formatCurrency(totalExpense)}
-            </p>
-            
-            {totalBudget > 0 && (
-              <div style={{ width: '80%', margin: '14px auto 0', textAlign: 'left' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', fontWeight: 700, color: 'var(--ink-3)', marginBottom: '4px' }}>
-                  <span>Budget Progress</span>
-                  <span>{Math.round(spendPercent)}%</span>
-                </div>
-                <div style={{ height: '6px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-                  <div style={{ 
-                    height: '100%', 
-                    width: `${spendPercent}%`, 
-                    background: spendPercent > 100 ? 'var(--r)' : 'var(--violet)',
-                    borderRadius: '10px',
-                    transition: 'width 0.5s ease'
-                  }} />
-                </div>
-              </div>
-            )}
+          {/* Balance Area */}
+          <div style={{ padding: '0 24px', textAlign: 'left', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 600, opacity: 0.4 }}>MONTHLY BALANCE • ID {user?.uid?.slice(-6).toUpperCase() || 'POCKET'}</p>
+              <Eye size={12} style={{ opacity: 0.4 }} />
+            </div>
+            <h1 style={{ margin: '4px 0 0', fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              {formatCurrency(balance)}
+            </h1>
+          </div>
 
-            <div className="hero-metrics">
-              <span className="hero-sub">Balance {formatCurrency(balance)}</span>
-              <span className="hero-sub-divider">•</span>
-              <span className="hero-sub">{monthTransCount} Trans.</span>
+          {/* Graph Section */}
+          <div style={{ width: '100%', height: '140px', padding: '0 10px', marginTop: '20px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={weeklyStats}>
+                <Line type="monotone" dataKey="val" stroke="var(--violet)" strokeWidth={3} dot={false} strokeOpacity={0.4} />
+                <XAxis dataKey="name" hide />
+              </LineChart>
+            </ResponsiveContainer>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 24px', opacity: 0.3, fontSize: '0.65rem', color: 'var(--ink)' }}>
+              {weeklyStats.map(s => <span key={s.name}>{s.name}</span>)}
+            </div>
+          </div>
+          
+          <p style={{ padding: '0 24px', margin: '16px 0 0', fontSize: '0.65rem', opacity: 0.3, textAlign: 'left', color: 'var(--ink)' }}>
+            ⓘ Graph representing stats past one week
+          </p>
+
+          {/* Overlapping Cards Container */}
+          <div style={{ 
+            position: 'absolute', 
+            bottom: '-40px', 
+            left: 0, 
+            width: '100%', 
+            padding: '0 20px', 
+            display: 'flex', 
+            gap: '12px',
+            zIndex: 100
+          }}>
+            <div style={{ 
+              flex: 1, background: '#E0E7FF', 
+              padding: '18px', borderRadius: '24px', boxShadow: '0 8px 16px rgba(0,0,0,0.05)',
+              display: 'flex', flexDirection: 'column'
+            }}>
+               <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: 'var(--violet)', opacity: 0.8 }}>Income this month</p>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                 <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>{formatCurrency(totalIncome)}</p>
+                 <ArrowUpRight size={18} color="#16A34A" />
+               </div>
+            </div>
+            <div style={{ 
+              flex: 1, background: '#FEE2E2', 
+              padding: '18px', borderRadius: '24px', boxShadow: '0 8px 16px rgba(0,0,0,0.05)',
+              display: 'flex', flexDirection: 'column'
+            }}>
+               <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#EF4444', opacity: 0.8 }}>Expense this month</p>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                 <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>{formatCurrency(totalExpense)}</p>
+                 <ArrowUpRight size={18} color="#EF4444" style={{ rotate: '90deg' }} />
+               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* ── SUB-PAGE HEADER (non-home tabs) ── */}
+      {activeTab !== 'home' && (
+        <div className="sub-header" style={{ 
+          padding: '24px 24px 40px', 
+          background: 'radial-gradient(at 0% 0%, #E0E7FF 0%, transparent 50%), radial-gradient(at 100% 0%, #FEE2E2 0%, transparent 50%), #F8F9FE',
+          color: 'var(--ink)',
+          textAlign: 'center',
+          position: 'relative'
+        }}>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, textTransform: 'capitalize' }}>
+            {activeTab === 'expenses' ? 'All Expenses' : activeTab}
+          </h2>
+          <p style={{ margin: '4px 0 0', fontSize: '0.75rem', opacity: 0.6 }}>{motivation}</p>
+        </div>
+      )}
+
       {/* ── CONTENT SHEET ── */}
-      <div className={`content-sheet${activeTab !== 'home' ? ' plain' : ''}`}>
+      <div className="content-sheet" style={{ 
+        background: '#FFFFFF', 
+        paddingTop: activeTab === 'home' ? '90px' : '40px',
+        borderTopLeftRadius: '32px',
+        borderTopRightRadius: '32px',
+        marginTop: '-32px',
+        flex: 1,
+        position: 'relative',
+        zIndex: 5,
+        boxShadow: '0 -20px 40px rgba(0,0,0,0.02)'
+      }}>
         {activeTab === 'home' && (
           <>
-            {/* Your Money Card */}
-            <SummarySection 
-              totalIncome={totalIncome} 
-              totalExpense={totalExpense} 
-              onDetail={() => setActiveTab('report')} 
-            />
-
-            {/* Transaction section */}
-
-            <div className="section-head">
-              <h3 className="section-title">Today's Activity</h3>
+            <div className="section-head" style={{ marginTop: '12px', marginBottom: '20px' }}>
+              <h3 className="section-title">Recent Transactions</h3>
               <button 
                 className="section-link" 
-                onClick={() => setActiveTab('transactions')}
+                onClick={() => setActiveTab('expenses')}
                 style={{ background: 'none', border: 'none', color: 'var(--violet)', fontWeight: 700, fontSize: '0.85rem' }}
               >
-                See All
+                see all
               </button>
             </div>
 
@@ -323,7 +426,7 @@ export default function App() {
                     <ExpenseCard
                       key={expense.id}
                       expense={expense}
-                      category={allCategories.find(c => c.value === expense.category)}
+                      category={EXPENSE_CATEGORIES.concat(INCOME_CATEGORIES).find(c => c.value === expense.category)}
                       onEdit={(e) => { setEditingExpense(e); setModalOpen(true); }}
                       onDelete={deleteExpense}
                     />
@@ -334,12 +437,8 @@ export default function App() {
           </>
         )}
 
-        {activeTab === 'transactions' && (
+        {activeTab === 'expenses' && (
           <>
-            <div className="section-head" style={{ marginBottom: '16px' }}>
-              <h3 className="section-title" style={{ fontSize: '1.4rem' }}>Transaction History</h3>
-            </div>
-            
             <FilterBar filter={filter} setFilter={setFilter} />
 
             <div className="expense-list" style={{ marginTop: '20px' }}>
@@ -377,7 +476,7 @@ export default function App() {
           />
         )}
 
-        {activeTab === 'report' && <ReportPage expenses={expenses} />}
+        {activeTab === 'analytics' && <ReportPage expenses={expenses} budgets={budgets} />}
       </div>
 
       {/* ── BOTTOM NAV (contains FAB) ── */}

@@ -15,7 +15,7 @@ export default function BudgetPage({ expenses, categories = [] }) {
 
   const spendingPerCategory = expenses.reduce((acc, curr) => {
     const d = new Date(curr.date);
-    if (d.getMonth() === currentMonth && d.getFullYear() === currentYear) {
+    if (d.getMonth() === currentMonth && d.getFullYear() === currentYear && curr.type !== 'income') {
       acc[curr.category] = (acc[curr.category] || 0) + curr.amount;
     }
     return acc;
@@ -35,15 +35,9 @@ export default function BudgetPage({ expenses, categories = [] }) {
 
   return (
     <div className="budget-page" style={{ paddingBottom: '100px' }}>
-      {/* ── HEADER ── */}
-      <div className="section-head" style={{ marginBottom: '24px' }}>
-        <div>
-          <h3 className="section-title" style={{ fontSize: '1.5rem', fontWeight: 800 }}>Monthly Budget</h3>
-          <p style={{ fontSize: '0.85rem', color: 'var(--ink-3)', marginTop: '4px' }}>
-            Smart limits for better saving
-          </p>
-        </div>
-        {!isAdding && budgets.length > 0 && (
+      {/* Quick Action Area */}
+      {!isAdding && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '24px' }}>
           <button 
             className="btn-save" 
             onClick={() => setIsAdding(true)}
@@ -57,8 +51,8 @@ export default function BudgetPage({ expenses, categories = [] }) {
           >
             <Plus size={18} style={{ marginRight: '6px' }} /> Set Budget
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── TOTAL PROGRESS CARD ── */}
       {budgets.length > 0 && !isAdding && (

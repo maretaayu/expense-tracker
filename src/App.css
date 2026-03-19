@@ -298,7 +298,7 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 .filter-chip.active { background: var(--violet); color: #fff; }
 
 /* Date group */
-.date-group { margin-bottom: 16px; }
+.date-group { margin-bottom: 32px; }
 .date-group-top {
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 4px; padding: 0 8px;
@@ -310,13 +310,16 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 .date-group-total { font-size: 0.72rem; font-weight: 700; color: var(--ink-3); }
 
 /* Transaction rows */
-.expense-list { display: flex; flex-direction: column; gap: 0; }
+.expense-list { display: flex; flex-direction: column; gap: 8px; }
 .expense-card {
   background: transparent;
-  padding: 16px 8px;
-  display: flex; align-items: center; gap: 14px;
+  padding: 16px 12px;
+  display: flex; align-items: center; gap: 16px;
   cursor: pointer; transition: all .18s;
-  border-bottom: 1px solid rgba(0,0,0,0.03);
+  border-radius: 20px;
+  background: var(--card);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.01);
 }
 .expense-card:last-child { border-bottom: none; }
 .expense-card:hover { transform: translateY(-1px); background: #FAFAFD; border-radius: 12px; border-bottom-color: transparent; }
@@ -453,20 +456,27 @@ input, textarea, select, button { font-family: inherit !important; outline: none
 }
 .modal-close:hover { color: var(--r); }
 
-/* Type toggle */
 .type-toggle {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 5px;
-  background: var(--muted); border-radius: var(--r-md); padding: 4px;
-  margin-bottom: 18px;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4px;
+  background: var(--muted); border-radius: 18px; padding: 4px;
+  margin-bottom: 24px;
 }
 .type-btn {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 11px; border-radius: var(--r-sm); border: none; cursor: pointer;
-  background: transparent; font-size: 0.84rem; font-weight: 700; color: var(--ink-3);
-  transition: .18s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px; border-radius: 14px; border: none; cursor: pointer;
+  background: transparent; font-size: 0.88rem; font-weight: 700; color: var(--ink-3);
+  transition: all .2s cubic-bezier(.4,0,.2,1);
 }
-.type-btn.active-expense { background: var(--card); color: var(--r); box-shadow: var(--sh); }
-.type-btn.active-income  { background: var(--card); color: var(--g); box-shadow: var(--sh); }
+.type-btn.active-expense { 
+  background: #FFF; 
+  color: #EF4444; 
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.15); 
+}
+.type-btn.active-income { 
+  background: #FFF; 
+  color: #16A34A; 
+  box-shadow: 0 4px 10px rgba(22, 163, 74, 0.15); 
+}
 
 /* Form */
 .modal-form { display: flex; flex-direction: column; gap: 14px; }
