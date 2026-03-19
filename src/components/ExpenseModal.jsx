@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowDownLeft, ArrowUpRight, X, Save, DollarSign, Calendar, Type, Camera, Sparkles, AlertCircle, CheckCircle2, ImagePlus } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, X, Save, DollarSign, Calendar, Type, Camera, Sparkles, AlertCircle, CheckCircle2, ImagePlus, Plus } from 'lucide-react';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/constants.jsx';
 import { parseReceiptWithGemini } from '../utils/geminiOcr.js';
 
