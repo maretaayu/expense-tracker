@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Plus, LogOut, ChevronDown, Bell, ChevronRight, CheckCircle2, AlertCircle, Wallet, Eye, ArrowUpRight } from 'lucide-react';
+import { Plus, LogOut, ChevronDown, Bell, ChevronRight, CheckCircle2, AlertCircle, Wallet, Eye, EyeOff, ArrowUpRight } from 'lucide-react';
 import { useRef } from 'react';
 import { onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth, db } from './firebase';
@@ -72,6 +72,7 @@ export default function App() {
   const [magicError, setMagicError] = useState(null);
   const [filter, setFilter] = useState({ search: '', category: '', type: '' });
   const [autoScan, setAutoScan] = useState(false);
+  const [showBalance, setShowBalance] = useState(true);
   
   const magicFileInputRef = useRef(null);
 
@@ -88,6 +89,8 @@ export default function App() {
     ...allExpenseCategories,
     ...INCOME_CATEGORIES
   ], [allExpenseCategories]);
+
+  const handleLogout = () => signOut(auth);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => { 
@@ -269,19 +272,27 @@ export default function App() {
                 <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800 }}>{firstName}</p>
               </div>
             </div>
-            <button style={{ border: 'none', background: 'white', width: 44, height: 44, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink)', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' }}>
-              <Bell size={20} />
+            <button 
+              onClick={handleLogout}
+              style={{ border: 'none', background: 'white', width: 44, height: 44, borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', cursor: 'pointer' }}
+            >
+              <LogOut size={20} />
             </button>
           </div>
 
           {/* Balance Area */}
           <div style={{ padding: '0 24px', textAlign: 'left', marginBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 600, opacity: 0.4 }}>MONTHLY BALANCE • ID {user?.uid?.slice(-6).toUpperCase() || 'POCKET'}</p>
-              <Eye size={12} style={{ opacity: 0.4 }} />
+              <p style={{ margin: 0, fontSize: '0.65rem', fontWeight: 600, opacity: 0.4 }}>MONTHLY REMAINING</p>
+              <button 
+                onClick={() => setShowBalance(!showBalance)}
+                style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              >
+                {showBalance ? <Eye size={12} style={{ opacity: 0.4 }} /> : <EyeOff size={12} style={{ opacity: 0.4 }} />}
+              </button>
             </div>
             <h1 style={{ margin: '4px 0 0', fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {formatCurrency(balance)}
+              {showBalance ? formatCurrency(balance) : '••••••••'}
             </h1>
           </div>
 
@@ -320,7 +331,7 @@ export default function App() {
             }}>
                <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: 'var(--violet)', opacity: 0.8 }}>Income this month</p>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                 <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>{formatCurrency(totalIncome)}</p>
+                 <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>{showBalance ? formatCurrency(totalIncome) : '••••••'}</p>
                  <ArrowUpRight size={18} color="#16A34A" />
                </div>
             </div>
@@ -331,7 +342,7 @@ export default function App() {
             }}>
                <p style={{ margin: 0, fontSize: '0.7rem', fontWeight: 700, color: '#EF4444', opacity: 0.8 }}>Expense this month</p>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                 <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>{formatCurrency(totalExpense)}</p>
+                 <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--ink)' }}>{showBalance ? formatCurrency(totalExpense) : '••••••'}</p>
                  <ArrowUpRight size={18} color="#EF4444" style={{ rotate: '90deg' }} />
                </div>
             </div>
