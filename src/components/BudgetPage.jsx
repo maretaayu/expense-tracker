@@ -63,57 +63,63 @@ export default function BudgetPage({ expenses, categories = [] }) {
       {/* ── TOTAL PROGRESS CARD ── */}
       {budgets.length > 0 && !isAdding && (
         <div style={{
-          background: 'linear-gradient(135deg, var(--violet) 0%, var(--violet-dark) 100%)',
+          background: 'linear-gradient(135deg, #8D61FF 0%, #6D43E0 100%)',
           padding: '24px',
           borderRadius: '28px',
           color: 'white',
           marginBottom: '32px',
-          boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.25)',
+          boxShadow: '0 20px 25px -5px rgba(109, 67, 224, 0.25)',
           position: 'relative',
           overflow: 'hidden'
         }}>
-          {/* Decorative Circle */}
+          {/* Decorative Circles */}
           <div style={{
-            position: 'absolute',
-            right: '-20px',
-            top: '-20px',
-            width: '120px',
-            height: '120px',
-            borderRadius: '50%',
-            background: 'rgba(255,255,255,0.1)',
-            pointerEvents: 'none'
+            position: 'absolute', right: '-20px', top: '-20px',
+            width: '120px', height: '120px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)', pointerEvents: 'none'
+          }} />
+          <div style={{
+            position: 'absolute', left: '-10px', bottom: '-10px',
+            width: '60px', height: '60px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.05)', pointerEvents: 'none'
           }} />
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative' }}>
             <div>
               <p style={{ margin: 0, fontSize: '0.7rem', opacity: 0.8, fontWeight: 700, letterSpacing: '0.05em' }}>TOTAL MONTHLY BUDGET</p>
-              <h2 style={{ margin: '8px 0', fontSize: '1.8rem', fontWeight: 800 }}>
+              <h2 style={{ margin: '8px 0', fontSize: '2rem', fontWeight: 800 }}>
                 {formatCurrency(totalBudget)}
               </h2>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '10px', borderRadius: '16px' }}>
-              <Wallet size={24} />
+            <div style={{ background: 'rgba(255,255,255,0.2)', padding: '12px', borderRadius: '18px' }}>
+              <Wallet size={26} />
             </div>
           </div>
-          <div style={{ marginTop: '20px', position: 'relative' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px' }}>
-               <span style={{ opacity: 0.9 }}>Overall Spending</span>
+
+          <div style={{ marginTop: '24px', position: 'relative' }}>
+             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '10px' }}>
+               <span style={{ opacity: 0.9, fontWeight: 600 }}>Spending Progress</span>
                <span style={{ fontWeight: 800 }}>{Math.round(overallPercent)}%</span>
              </div>
-             <div style={{ height: '8px', background: 'rgba(255,255,255,0.2)', borderRadius: '4px', overflow: 'hidden' }}>
+             <div style={{ height: '10px', background: 'rgba(255,255,255,0.2)', borderRadius: '6px', overflow: 'hidden' }}>
                <div style={{ 
                  height: '100%', 
                  width: `${overallPercent}%`,
                  background: 'white',
-                 borderRadius: '4px',
-                 transition: 'width 1s ease'
+                 borderRadius: '6px',
+                 transition: 'width 1.2s cubic-bezier(0.1, 0.7, 0.1, 1)'
                }} />
              </div>
-             <p style={{ margin: '12px 0 0', fontSize: '0.75rem', opacity: 0.8, fontWeight: 500 }}>
-               {totalSpent > totalBudget 
-                 ? `Over budget by ${formatCurrency(totalSpent - totalBudget)}` 
-                 : `${formatCurrency(totalBudget - totalSpent)} left to spend this month`}
-             </p>
+             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '14px', alignItems: 'center' }}>
+                <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9, fontWeight: 600 }}>
+                  {formatCurrency(totalSpent)} spent
+                </p>
+                <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.9, fontWeight: 600 }}>
+                  {totalSpent > totalBudget 
+                    ? `Over by ${formatCurrency(totalSpent - totalBudget)}` 
+                    : `${formatCurrency(totalBudget - totalSpent)} remaining`}
+                </p>
+             </div>
           </div>
         </div>
       )}
@@ -191,12 +197,15 @@ export default function BudgetPage({ expenses, categories = [] }) {
                   Rp
                 </span>
                 <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  type="text"
+                  inputMode="numeric"
+                  value={amount ? Number(amount).toLocaleString('id-ID') : ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setAmount(val);
+                  }}
                   placeholder="0"
-                  className="modal-input"
-                  style={{ width: '100%', paddingLeft: '48px', fontSize: '1.2rem', fontWeight: 800, height: '56px', borderRadius: '18px' }}
+                  style={{ width: '100%', paddingLeft: '48px', fontSize: '1.2rem', fontWeight: 800, height: '56px', borderRadius: '18px', border: 'none', background: '#F1F5F9' }}
                   autoFocus
                 />
               </div>

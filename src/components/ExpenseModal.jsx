@@ -286,14 +286,27 @@ export default function ExpenseModal({ isOpen, onClose, onSave, expense, autoSca
           <div className="f-row">
             <div className="f-group">
               <label className="f-label"><DollarSign size={13} /> Amount (IDR)</label>
-              <input
-                className="f-input"
-                type="number"
-                placeholder="0"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                required
-              />
+              <div style={{ position: 'relative' }}>
+                <span style={{ 
+                  position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', 
+                  fontWeight: 800, color: 'var(--ink-2)', fontSize: '0.85rem' 
+                }}>
+                  Rp
+                </span>
+                <input
+                  className="f-input"
+                  style={{ paddingLeft: '40px' }}
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0"
+                  value={form.amount ? Number(form.amount).toLocaleString('id-ID') : ''}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setForm({ ...form, amount: val });
+                  }}
+                  required
+                />
+              </div>
             </div>
             <div className="f-group">
               <label className="f-label"><Calendar size={13} /> Date</label>

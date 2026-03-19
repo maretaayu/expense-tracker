@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, PieChart } from 'lucide-react';
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ChevronLeft, ChevronRight, PieChart as PieIcon, Download, FileSpreadsheet } from 'lucide-react';
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, formatCurrency } from '../utils/constants.jsx';
 
 export default function ReportPage({ expenses }) {
@@ -48,7 +48,7 @@ export default function ReportPage({ expenses }) {
       return {
         cat,
         label: def?.label || cat,
-        icon: def?.icon || PieChart,
+        icon: def?.icon || PieIcon,
         color: def?.color || '#8D61FF',
         bg: def?.bg || '#F0F0F6',
         amount: sums[cat],
@@ -107,6 +107,26 @@ export default function ReportPage({ expenses }) {
     const dPct = pTotal > 0 ? Math.round((diff / pTotal) * 100) : (total > 0 ? 100 : 0);
     return { prevTotal: pTotal, diffPct: dPct };
   }, [expenses, range, reportType, total, month, year]);
+
+  const exportToCSV = () => {
+    const headers = ['Date', 'Title', 'Category', 'Amount', 'Type', 'Note'];
+    const rows = filtered.map(e => [
+      e.date || (e.createdAt?.toDate ? e.createdAt.toDate().toISOString().split('T')[0] : ''),
+      `"${e.title.replace(/"/g, '""')}"`,
+      e.category,
+      e.amount,
+      e.type,
+      `"${(e.note || '').replace(/"/g, '""')}"`
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `expense_report_${year}_${month + 1}.csv`);
+    link.click();
+  };
 
   const chartData = useMemo(() => {
     if (range === 'monthly') {
@@ -188,6 +208,19 @@ export default function ReportPage({ expenses }) {
           </div>
           <button className="month-nav-btn" onClick={() => changeMonth(1)} disabled={isCurrentMonth} style={{ opacity: isCurrentMonth ? 0.3 : 1 }}>
             <ChevronRight size={18} />
+          </button>
+          
+          <button 
+            onClick={exportToCSV}
+            style={{ 
+              marginLeft: 'auto', background: 'white', border: '1px solid var(--border)', 
+              padding: '8px 12px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '6px',
+              fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink-2)', cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+            }}
+          >
+            <FileSpreadsheet size={16} color="#16A34A" />
+            Export
           </button>
         </div>
       )}
@@ -332,6 +365,54 @@ export default function ReportPage({ expenses }) {
           </div>
         )}
       </div>
+
+      {/* ── DOUGHNUT CHART ── */}
+      {breakdown.length > 0 && (
+        <div style={{ 
+          background: 'var(--card)', borderRadius: 'var(--r-2xl)', padding: '24px 16px', 
+          marginBottom: '32px', border: '1px solid var(--border)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative'
+        }}>
+          <div style={{ width: '100%', height: 220 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={breakdown}
+                  dataKey="amount"
+                  nameKey="label"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={65}
+                  outerRadius={90}
+                  paddingAngle={6}
+                  stroke="none"
+                >
+                  {breakdown.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(val) => formatCurrency(val)}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: 'var(--sh-lg)', fontSize: '0.8rem', fontWeight: 700 }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          
+          {/* Legend / Overlay text */}
+          <div style={{ 
+            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -15%)', 
+            textAlign: 'center', pointerEvents: 'none' 
+          }}>
+            <p style={{ fontSize: '0.65rem', color: 'var(--ink-3)', fontWeight: 700, margin: 0, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Total {reportType}
+            </p>
+            <p style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--ink)', margin: '2px 0 0' }}>
+              {formatCurrency(total)}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Category List */}
       <div className="report-list-header" style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom: 16}}>
